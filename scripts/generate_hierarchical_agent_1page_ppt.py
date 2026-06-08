@@ -1,4 +1,4 @@
-"""1-page interview PPT: hierarchical AI agent architecture — white + red clean theme."""
+"""1-page presentation deck: hierarchical AI agent architecture with a white and red clean theme."""
 
 from __future__ import annotations
 
@@ -167,7 +167,7 @@ def build_diagram(slide) -> None:
         fw - 0.56,
         1.2,
         "Flow: CSV → Engine → Context → Gemini or Local → NL Answer\n"
-        "面接: 数値は再現可能ロジック / 説明はLLM層",
+        "Decision logic: reproducible calculations with a natural-language explanation layer",
         size=8.5,
         color=GRAY,
         line_spacing=1.1,
@@ -182,7 +182,7 @@ def build() -> None:
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = WHITE
 
-    add_header(slide, 1, "Portfolio Title & Agent Architecture")
+    add_header(slide, 1, "Project Title & Agent Architecture")
 
     add_text(
         slide,
@@ -251,8 +251,8 @@ def build() -> None:
         5.55,
         5.65,
         0.75,
-        "Interview Point / 面接ポイント:\n"
-        "単一チャットではなく「予測→ROP→補充→移動→説明」の階層分解デモ",
+        "Business Value:\n"
+        "Hierarchical workflow from forecast to ROP, replenishment, transfer, and explanation",
         size=11.5,
         bold=True,
         color=RED,

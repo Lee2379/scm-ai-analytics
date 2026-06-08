@@ -29,7 +29,7 @@ LANG_OPTIONS = {
 }
 
 JP = {
-    "portfolio": "AI SCM\u30c7\u30fc\u30bf\u5206\u6790\u30d7\u30ed\u30b8\u30a7\u30af\u30c8",
+    "portfolio": "AI SCM\u30c7\u30fc\u30bf\u5206\u6790\u30b7\u30b9\u30c6\u30e0",
     "hero_title": "AI SCM Data Analysis Project",
     "summary": "\u9700\u8981\u4e88\u6e2c\u3001SKU\u30fb\u5e97\u8217\u5225\u767a\u6ce8\u70b9\u3001\u5b89\u5168\u5728\u5eab\u3001\u88dc\u5145\u63a8\u85a6\u3001\u5e97\u8217\u9593\u5728\u5eab\u79fb\u52d5\u3092\u7d71\u5408\u3057\u305fSCM\u610f\u601d\u6c7a\u5b9a\u652f\u63f4\u30b7\u30b9\u30c6\u30e0\u3002",
     "chatbot": "\u30c1\u30e3\u30c3\u30c8\u30dc\u30c3\u30c8",
@@ -562,10 +562,7 @@ with tab_transfer:
 
 with tab_agent:
     st.subheader(tr(lang, "SCM Manager Agent", JP["manager"], "SCM 매니저 에이전트"))
-    st.write(
-        "Ask about reorder actions, safety stock, stockout risk, or store-transfer recommendations. "
-        "Gemini is used only when GEMINI_API_KEY is configured; otherwise local Agent logic answers."
-    )
+    st.write("Ask about reorder actions, safety stock, stockout risk, or store-transfer recommendations.")
     question = st.text_input(
         tr(lang, "Question", JP["question"], "질문"),
         placeholder=question_placeholder,

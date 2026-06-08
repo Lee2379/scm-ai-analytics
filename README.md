@@ -1,27 +1,27 @@
 ﻿# AI SCM Data Analysis Project
 
-Japanese / English portfolio project for SCM, data analysis, and AI agent roles.
+SCM analytics and decision-support dashboard for global fashion retail operations.
 
 This project is a Streamlit-based SCM decision-support dashboard for global fashion retail. It connects demand forecasting, SKU-store inventory policy, reorder-point calculation, replenishment recommendations, inter-store transfer recommendations, and an SCM Manager Agent into one practical business workflow.
 
-## Portfolio Target
+## Project Scope
 
-- Target roles: SCM Analyst, Data Analyst, AI Solution Planner, Retail Operations Analyst
-- Target market: Japanese retail / apparel / logistics companies
-- Portfolio owner: Lee
-- Demo data: simulated retail SCM data only. No private company data is included.
+- Domain: fashion retail SCM and inventory operations
+- Focus areas: demand forecasting, inventory policy, replenishment planning, and store-transfer decisions
+- Decision level: SKU-store-level risk monitoring and action prioritization
+- Data scope: simulated retail SCM data only. No private company data is included.
 
 ## Japanese Summary
 
-本プロジェクトは、グローバルファッション小売業のSCM業務を想定したデータ分析ポートフォリオです。需要予測、SKU・店舗別の発注点、安全在庫、補充推奨、店舗間在庫移動、AIエージェントによる意思決定支援を一つのダッシュボードに統合しています。
+本プロジェクトは、グローバルファッション小売業のSCM業務を想定したデータ分析・意思決定支援ダッシュボードです。需要予測、SKU・店舗別の発注点、安全在庫、補充推奨、店舗間在庫移動、AIエージェントによる判断支援を一つの業務フローとして統合しています。
 
-面接では、単なるチャート作成ではなく、在庫切れ・過剰在庫・補充優先度というビジネス課題を、データとルールベースのロジック、さらに任意のGemini API連携で説明できる点をアピールできます。
+在庫切れ・過剰在庫・補充優先度というSCM上の課題に対し、データ処理、在庫ロジック、可視化、自然言語による確認機能を組み合わせて、実務に近い意思決定プロセスを再現します。
 
 ## Business Problem
 
 Global apparel retailers need to reduce stockouts, overstock, and logistics inefficiency while responding to demand volatility across stores and products.
 
-This portfolio answers the question:
+This system answers the question:
 
 > How can an AI Agent support SCM managers by forecasting demand, detecting SKU-store inventory risk, and recommending replenishment or store-transfer actions?
 
@@ -34,8 +34,7 @@ This portfolio answers the question:
 - Inter-store inventory transfer recommendation
 - Streamlit dashboard with English, Japanese, and Korean UI labels
 - SCM Manager Agent chat
-- Optional Gemini API response generation with local rule-based fallback
-- PowerPoint portfolio deck generation scripts
+- PowerPoint presentation deck generation scripts
 
 ## Dashboard Screenshots
 
@@ -81,7 +80,7 @@ current_inventory < ROP -> replenishment recommendation
 ## Folder Structure
 
 ```text
-scm-agent-portfolio/
+ai-scm-data-analysis-project/
   app.py
   requirements.txt
   .env.example
@@ -103,8 +102,7 @@ scm-agent-portfolio/
   scripts/
     build_demo_data.py
     generate_ppt.py
-    generate_3page_interview_ppt.py
-    generate_hierarchical_agent_1page_ppt.py
+    presentation generation scripts
   src/
     agent.py
     scm_engine.py
@@ -113,7 +111,7 @@ scm-agent-portfolio/
 ## Setup
 
 ```bat
-cd scm-agent-portfolio
+cd ai-scm-data-analysis-project
 python -m pip install -r requirements.txt
 ```
 
@@ -143,56 +141,19 @@ Then open:
 http://localhost:8502
 ```
 
-## Generate Portfolio PPT
+## Project Value
 
-```bat
-python scripts\generate_3page_interview_ppt.py
-python scripts\generate_hierarchical_agent_1page_ppt.py
-```
+- Designed an end-to-end SCM decision workflow from demand signals to inventory actions.
+- Converted sales, inventory, supply, and forecast data into SKU-store-level replenishment recommendations.
+- Implemented ROP and safety-stock logic to make replenishment decisions explainable and auditable.
+- Added an AI Agent layer that helps SCM managers review inventory risk and action priorities in natural language.
+- Built the system to run with local rule-based logic by default for stable dashboard demonstrations.
 
-Example outputs:
+## Japanese Project Summary
 
-```text
-outputs\AI_SCM_Data_Analysis_Project_3pages.pptx
-outputs\AI_SCM_Data_Analysis_Project_Agent_Architecture_1page.pptx
-```
+本プロジェクトは、ファッション小売SCMにおける在庫切れと過剰在庫の削減をテーマにしたデータ分析・意思決定支援システムです。需要予測、発注点、安全在庫、補充推奨、店舗間在庫移動を一つの業務フローとして設計し、SKU・店舗単位で優先対応すべき在庫リスクを可視化します。
 
-## Optional API Keys
-
-Do not commit real keys into GitHub.
-
-The chatbot can use Google's official GenAI SDK when `GEMINI_API_KEY` is configured. Without an API key, the dashboard automatically uses a local rule-based SCM Agent.
-
-Environment variable example:
-
-```bat
-set "GEMINI_API_KEY=your_key_here"
-streamlit run app.py --server.port 8502
-```
-
-Streamlit secrets example:
-
-```text
-.streamlit\secrets.toml
-```
-
-```toml
-GEMINI_API_KEY = "your_key_here"
-```
-
-## Interview Talking Points
-
-- I designed the portfolio around a real SCM decision flow, not only visualization.
-- I converted sales, inventory, supply, and forecast data into SKU-store level actions.
-- I implemented ROP and safety-stock logic to explain replenishment decisions clearly.
-- I added an AI Agent layer so SCM managers can ask business questions in natural language.
-- The system works without external API keys, but can be extended with Gemini when available.
-
-## Japanese Interview Pitch
-
-このポートフォリオは、ファッション小売SCMにおける在庫切れと過剰在庫の削減を目的に作成しました。需要予測、発注点、安全在庫、補充推奨、店舗間在庫移動を一つのワークフローとして設計し、SCMマネージャーが優先対応すべきSKUと店舗を判断できるようにしています。
-
-AIエージェント部分では、ダッシュボード上のSCMデータをもとに、補充優先度や在庫リスクについて自然言語で説明できます。外部APIがない場合でもローカルルールベースで動作するため、面接やデモ環境でも安定して説明できます。
+AIエージェント機能では、ダッシュボード上のSCMデータをもとに、補充優先度、在庫リスク、判断ロジックを自然言語で確認できます。ローカルのルールベースロジックで安定して動作するため、データ分析から意思決定支援までの流れを一貫して確認できます。
 
 ## Security Notes
 
