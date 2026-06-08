@@ -37,6 +37,24 @@ This portfolio answers the question:
 - Optional Gemini API response generation with local rule-based fallback
 - PowerPoint portfolio deck generation scripts
 
+## Dashboard Screenshots
+
+### Inventory Risk and Replenishment Overview
+
+![Inventory risk distribution and top replenishment recommendations](assets/screenshots/dashboard-risk-overview.jpg)
+
+### Demand Forecast and Sales Pattern
+
+![Demand forecast and recent sales pattern charts](assets/screenshots/dashboard-demand-forecast.jpg)
+
+### SKU-Store ROP Policy
+
+![SKU-store-level ROP policy table](assets/screenshots/dashboard-rop-policy.jpg)
+
+### SCM Manager Agent
+
+![Japanese SCM Manager Agent response for reorder priority](assets/screenshots/dashboard-ai-agent.jpg)
+
 ## SCM Logic
 
 ```text
@@ -76,6 +94,12 @@ scm-agent-portfolio/
   outputs/
     AI_SCM_Data_Analysis_Project_3pages.pptx
     AI_SCM_Data_Analysis_Project_Agent_Architecture_1page.pptx
+  assets/
+    screenshots/
+      dashboard-risk-overview.jpg
+      dashboard-demand-forecast.jpg
+      dashboard-rop-policy.jpg
+      dashboard-ai-agent.jpg
   scripts/
     build_demo_data.py
     generate_ppt.py
