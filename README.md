@@ -85,7 +85,7 @@ flowchart TB
     D["4. SCM Logic<br/>(SCMロジック)<br/>Forecast, safety stock, ROP"]
     E["5. Development<br/>(開発)<br/>Dashboard and SCM Agent"]
     F["6. Validation<br/>(検証)<br/>Risk and recommendation checks"]
-    G["7. Deployment<br/>(公開準備)<br/>GitHub and runtime setup"]
+    G["7. Dashboard Delivery<br/>(ダッシュボード提供)<br/>Runnable SCM application"]
 
     A --> B --> C --> D --> E --> F --> G
 ```
