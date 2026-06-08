@@ -38,6 +38,28 @@ This system answers the question:
 
 > How can an AI Agent support SCM managers by forecasting demand, detecting SKU-store inventory risk, and recommending replenishment or store-transfer actions?
 
+## End-to-End Delivery Flow
+
+This project is structured as an end-to-end analytics delivery workflow, from business planning to a deployable dashboard.
+
+```mermaid
+flowchart LR
+    A["Business Planning<br/>SCM issue framing"] --> B["Problem Definition<br/>Stockout, overstock, replenishment priority"]
+    B --> C["Data Design<br/>Store, product, sales, inventory, supply, weather"]
+    C --> D["Analytics Logic<br/>Forecast, safety stock, ROP, transfer rules"]
+    D --> E["Application Development<br/>Streamlit dashboard and SCM Agent"]
+    E --> F["Validation<br/>Risk tables, charts, and recommendation checks"]
+    F --> G["Deployment Preparation<br/>GitHub versioning, dependency setup, runtime command"]
+```
+
+| Delivery Area | Implementation in This Project |
+| --- | --- |
+| Planning | Defines a retail SCM decision-support system around inventory risk and replenishment actions. |
+| Business Problem | Converts stockout, overstock, and transfer decisions into measurable SKU-store-level logic. |
+| Data Preparation | Uses structured CSV tables for store, product, sales, inventory, supply, weather, forecast, and recommendations. |
+| Development | Implements SCM calculation logic, dashboard visualization, and natural-language Agent responses. |
+| Deployment Readiness | Provides a GitHub-hosted project structure, dependency file, and Streamlit runtime command. |
+
 ## Key Features
 
 - Demand forecasting by SKU and store
