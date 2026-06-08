@@ -73,13 +73,13 @@ This project is structured as an end-to-end analytics delivery workflow, from bu
 
 ```mermaid
 flowchart TB
-    A["1. Business Planning<br/>Define SCM issue and operational scope"]
-    B["2. Problem Definition<br/>Stockout, overstock, and replenishment priority"]
-    C["3. Data Design<br/>Store, product, sales, inventory, supply, and weather tables"]
-    D["4. Analytics Logic<br/>Forecast, safety stock, ROP, and transfer rules"]
-    E["5. Application Development<br/>Streamlit dashboard and SCM Manager Agent"]
-    F["6. Validation<br/>Risk tables, charts, and recommendation checks"]
-    G["7. Deployment Preparation<br/>GitHub versioning, dependencies, and runtime command"]
+    A["1. Planning<br/>SCM scope"]
+    B["2. Problem Definition<br/>Stockout and overstock"]
+    C["3. Data Design<br/>Retail SCM tables"]
+    D["4. Analytics Logic<br/>Forecast, safety stock, ROP"]
+    E["5. Development<br/>Dashboard and SCM Agent"]
+    F["6. Validation<br/>Risk and recommendation checks"]
+    G["7. Deployment<br/>GitHub and runtime setup"]
 
     A --> B --> C --> D --> E --> F --> G
 ```
