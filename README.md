@@ -39,6 +39,26 @@ The CSV files committed in this repository are not raw Kaggle exports. They are 
 
 The data is intended to demonstrate SCM analytics workflow design, inventory policy calculation, and operational decision support under controlled assumptions.
 
+## Data EDA Summary
+
+The EDA process focuses on confirming that the dataset is suitable for SKU-store-level SCM decision support before applying forecasting, reorder point, and transfer logic.
+
+| EDA Area | Check | Result |
+| --- | --- | --- |
+| Data volume | Sales history coverage | 10,800 sales rows from 2025-01-01 to 2025-06-29 |
+| Master data | Store and product coverage | 5 Japanese city-level stores and 12 fashion retail SKUs |
+| Granularity | SCM decision unit | 60 SKU-store combinations |
+| Inventory risk | Stock status distribution | 26 stockout-risk cases and 3 overstock cases |
+| Recommendation output | Action table coverage | 60 replenishment records and 8 store-transfer recommendations |
+
+EDA workflow:
+
+1. Validate table structure and key fields across sales, product, store, inventory, supply, forecast, and recommendation tables.
+2. Check time coverage, SKU-store combinations, and whether each operational table can be joined through `store_id` and `sku_id`.
+3. Review demand patterns by product, store, seasonality, weekend or holiday-like periods, promotions, and weather-sensitive categories.
+4. Compare current inventory against calculated safety stock and reorder point to identify stockout and overstock risk.
+5. Convert EDA findings into dashboard views: risk distribution, city-level risk, demand forecast, ROP policy, replenishment priority, and store-transfer recommendations.
+
 ## Business Problem
 
 Global apparel retailers need to reduce stockouts, overstock, and logistics inefficiency while responding to demand volatility across stores and products.
