@@ -87,11 +87,22 @@ def load_tables() -> dict[str, pd.DataFrame]:
         "recommendations": pd.read_csv(DATA_DIR / "recommendations.csv"),
         "forecast": pd.read_csv(DATA_DIR / "forecast.csv", parse_dates=["date"]),
         "transfers": pd.read_csv(DATA_DIR / "transfer_recommendations.csv"),
+        "ab_results": pd.read_csv(DATA_DIR / "ab_test_results.csv"),
+        "ab_summary": pd.read_csv(DATA_DIR / "ab_test_kpi_summary.csv"),
+        "ab_segments": pd.read_csv(DATA_DIR / "ab_test_segment_summary.csv"),
     }
 
 
 def data_ready() -> bool:
-    return all((DATA_DIR / name).exists() for name in ["sales.csv", "inventory_policy.csv", "recommendations.csv"])
+    required_files = [
+        "sales.csv",
+        "inventory_policy.csv",
+        "recommendations.csv",
+        "ab_test_results.csv",
+        "ab_test_kpi_summary.csv",
+        "ab_test_segment_summary.csv",
+    ]
+    return all((DATA_DIR / name).exists() for name in required_files)
 
 
 def ask_scm_agent(question: str, lang: str) -> str:
@@ -380,6 +391,9 @@ policy = policy.merge(stores[["store_id", "city", "store_type"]], on="store_id",
 recs = tables["recommendations"].merge(products[["sku_id", "product_name", "category"]], on="sku_id", how="left")
 forecast = tables["forecast"].merge(products[["sku_id", "product_name"]], on="sku_id", how="left")
 transfers = tables["transfers"]
+ab_results = tables["ab_results"]
+ab_summary = tables["ab_summary"]
+ab_segments = tables["ab_segments"]
 
 with st.sidebar:
     st.subheader(tr(lang, "Controls", JP["controls"], "컨트롤"))
@@ -443,12 +457,13 @@ st.caption(
     "Safety stock = demand standard deviation x Z-value x sqrt(lead time)."
 )
 
-tab_overview, tab_forecast, tab_inventory, tab_transfer, tab_agent = st.tabs(
+tab_overview, tab_forecast, tab_inventory, tab_transfer, tab_ab, tab_agent = st.tabs(
     [
         tr(lang, "Overview", JP["overview"], "개요"),
         tr(lang, "Demand Forecast", JP["forecast"], "수요예측"),
         tr(lang, "ROP & Safety Stock", JP["rop"], "ROP 및 안전재고"),
         tr(lang, "Store Transfer", JP["transfer"], "매장 간 이동"),
+        tr(lang, "A/B Impact", "A/B効果検証", "A/B Impact"),
         tr(lang, "AI Agent", JP["agent"], "AI 에이전트"),
     ]
 )
@@ -559,6 +574,120 @@ with tab_transfer:
         st.info(tr(lang, "No transfer recommendation available in the current scenario.", JP["no_transfer"], "현재 시나리오에서는 매장 간 이동 추천이 없습니다."))
     else:
         st.dataframe(transfers, use_container_width=True, hide_index=True)
+
+with tab_ab:
+    st.subheader("A/B Test Simulation: SCM KPI Impact")
+    st.caption(
+        "Control = baseline ROP policy. Treatment = AI replenishment recommendation plus store-transfer policy. "
+        "This is a portfolio simulation based on the repository's SCM demo data, not a live production experiment."
+    )
+    st.caption(
+        "日本語: 従来のROP在庫運用と、AI補充推奨・店舗間移動を組み合わせた施策を比較するA/Bテスト設計シミュレーションです。"
+    )
+
+    control = ab_summary[ab_summary["group"].str.contains("Control")].iloc[0]
+    treatment = ab_summary[ab_summary["group"].str.contains("Treatment")].iloc[0]
+    cost_reduction_pct = float(treatment["cost_reduction_vs_control_pct"]) * 100
+    cost_reduction_jpy = float(control["total_scm_cost_jpy"] - treatment["total_scm_cost_jpy"])
+    stockout_reduction_pp = float(control["stockout_rate"] - treatment["stockout_rate"]) * 100
+    service_level_uplift_pp = float(treatment["service_level"] - control["service_level"]) * 100
+    lost_sales_reduction_jpy = float(control["lost_sales_proxy_jpy"] - treatment["lost_sales_proxy_jpy"])
+
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    kpi1.metric("Total SCM cost reduction", f"{cost_reduction_pct:.1f}%", f"-JPY {cost_reduction_jpy:,.0f}")
+    kpi2.metric("Stockout-rate reduction", f"{stockout_reduction_pp:.1f} pp")
+    kpi3.metric("Service-level uplift", f"{service_level_uplift_pp:.1f} pp")
+    kpi4.metric("Lost-sales reduction", f"JPY {lost_sales_reduction_jpy:,.0f}")
+
+    cost_fig = px.bar(
+        ab_summary,
+        x="group",
+        y="total_scm_cost_jpy",
+        color="group",
+        color_discrete_sequence=[INK_BLACK, RETAIL_RED],
+        title="Control vs Treatment: Total SCM Cost",
+    )
+    cost_fig.update_layout(showlegend=False, height=390, paper_bgcolor="white", plot_bgcolor="white")
+
+    rate_long = ab_summary.melt(
+        id_vars=["group"],
+        value_vars=["stockout_rate", "service_level"],
+        var_name="metric",
+        value_name="rate",
+    )
+    rate_fig = px.bar(
+        rate_long,
+        x="metric",
+        y="rate",
+        color="group",
+        barmode="group",
+        color_discrete_sequence=[INK_BLACK, RETAIL_RED],
+        title="Operational KPI Rate Comparison",
+    )
+    rate_fig.update_layout(height=390, paper_bgcolor="white", plot_bgcolor="white", yaxis_tickformat=".0%")
+
+    left, right = st.columns(2)
+    with left:
+        st.plotly_chart(cost_fig, use_container_width=True)
+    with right:
+        st.plotly_chart(rate_fig, use_container_width=True)
+
+    segment_cost = ab_segments.pivot_table(
+        index=["city", "category"],
+        columns="group",
+        values="total_scm_cost_jpy",
+        aggfunc="sum",
+    ).reset_index()
+    segment_cost["cost_reduction_jpy"] = (
+        segment_cost["Control: baseline ROP policy"]
+        - segment_cost["Treatment: AI recommendation policy"]
+    )
+    segment_cost["cost_reduction_pct"] = (
+        segment_cost["cost_reduction_jpy"] / segment_cost["Control: baseline ROP policy"].replace(0, pd.NA)
+    )
+    segment_cost = segment_cost.sort_values("cost_reduction_jpy", ascending=False)
+
+    st.subheader("Where logistics should improve first")
+    st.caption("改善優先領域: Cost-reduction drivers by city and product category.")
+    driver_fig = px.bar(
+        segment_cost.head(10),
+        x="cost_reduction_jpy",
+        y="city",
+        color="category",
+        orientation="h",
+        title="Top Improvement Drivers by City and Category",
+    )
+    driver_fig.update_layout(height=440, paper_bgcolor="white", plot_bgcolor="white")
+    st.plotly_chart(driver_fig, use_container_width=True)
+
+    st.dataframe(
+        segment_cost[["city", "category", "cost_reduction_jpy", "cost_reduction_pct"]].head(12),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.subheader("A/B Test Detail Table")
+    st.dataframe(
+        ab_results[
+            [
+                "group",
+                "city",
+                "store_id",
+                "product_name",
+                "category",
+                "forecast_28d",
+                "order_qty",
+                "inbound_transfer_qty",
+                "outbound_transfer_qty",
+                "service_level",
+                "lost_sales_units",
+                "ending_inventory_units",
+                "total_scm_cost_jpy",
+            ]
+        ].sort_values(["group", "total_scm_cost_jpy"], ascending=[True, False]).head(30),
+        use_container_width=True,
+        hide_index=True,
+    )
 
 with tab_agent:
     st.subheader(tr(lang, "SCM Manager Agent", JP["manager"], "SCM 매니저 에이전트"))

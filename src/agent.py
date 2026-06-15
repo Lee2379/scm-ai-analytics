@@ -11,13 +11,20 @@ GEMINI_MODEL = "gemini-3.5-flash"
 
 def load_agent_tables(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     data_dir = Path(data_dir)
-    return {
+    tables = {
         "policy": pd.read_csv(data_dir / "inventory_policy.csv"),
         "recommendations": pd.read_csv(data_dir / "recommendations.csv"),
         "transfers": pd.read_csv(data_dir / "transfer_recommendations.csv"),
         "products": pd.read_csv(data_dir / "products.csv"),
         "stores": pd.read_csv(data_dir / "stores.csv"),
     }
+    ab_summary = data_dir / "ab_test_kpi_summary.csv"
+    ab_segments = data_dir / "ab_test_segment_summary.csv"
+    if ab_summary.exists():
+        tables["ab_summary"] = pd.read_csv(ab_summary)
+    if ab_segments.exists():
+        tables["ab_segments"] = pd.read_csv(ab_segments)
+    return tables
 
 
 def gemini_ready() -> bool:
@@ -99,6 +106,47 @@ def build_scm_context(tables: dict[str, pd.DataFrame]) -> str:
             f"{int(row.transfer_qty)} units of {row.product_name}."
         )
 
+    if "ab_summary" in tables:
+        ab_summary = tables["ab_summary"]
+        control = ab_summary[ab_summary["group"].str.contains("Control")].iloc[0]
+        treatment = ab_summary[ab_summary["group"].str.contains("Treatment")].iloc[0]
+        lines.extend(
+            [
+                "",
+                "A/B TEST SIMULATION IMPACT",
+                f"- Control stockout rate: {control.stockout_rate:.1%}",
+                f"- Treatment stockout rate: {treatment.stockout_rate:.1%}",
+                f"- Control service level: {control.service_level:.1%}",
+                f"- Treatment service level: {treatment.service_level:.1%}",
+                f"- Total SCM cost reduction: {treatment.cost_reduction_vs_control_pct:.1%}",
+            ]
+        )
+
+    if "ab_segments" in tables:
+        segments = tables["ab_segments"]
+        pivot = segments.pivot_table(
+            index=["city", "category"],
+            columns="group",
+            values="total_scm_cost_jpy",
+            aggfunc="sum",
+        ).reset_index()
+        required = {
+            "Control: baseline ROP policy",
+            "Treatment: AI recommendation policy",
+        }
+        if required.issubset(pivot.columns):
+            pivot["cost_reduction_jpy"] = (
+                pivot["Control: baseline ROP policy"]
+                - pivot["Treatment: AI recommendation policy"]
+            )
+            top_driver = pivot.sort_values("cost_reduction_jpy", ascending=False).head(3)
+            lines.extend(["", "TOP A/B IMPROVEMENT DRIVERS"])
+            for _, row in top_driver.iterrows():
+                lines.append(
+                    f"- {row.city} / {row.category}: "
+                    f"estimated cost reduction JPY {row.cost_reduction_jpy:,.0f}."
+                )
+
     return "\n".join(lines)
 
 
@@ -127,6 +175,12 @@ def local_agent_reply(question: str, tables: dict[str, pd.DataFrame], lang: str 
         return _reply(_section(context, "HIGHEST SAFETY STOCK REQUIREMENTS"))
     if any(k in q for k in ["transfer", "store"]):
         return _reply(_section(context, "STORE TRANSFER RECOMMENDATIONS"))
+    if any(k in q for k in ["a/b", "ab test", "impact", "effect", "improve", "\u52b9\u679c", "\u6539\u5584"]):
+        return _reply(
+            _section(context, "A/B TEST SIMULATION IMPACT")
+            + "\n\n"
+            + _section(context, "TOP A/B IMPROVEMENT DRIVERS")
+        )
     if any(k in q for k in ["risk", "stockout"]):
         return _reply(_section(context, "HIGHEST STOCKOUT RISKS"))
     return _reply(_section(context, "SCM LIVE DATA SNAPSHOT"))
@@ -151,6 +205,8 @@ def gemini_reply_if_configured(question: str, context: str, lang: str = "ja") ->
         "When answering reorder-priority questions, do NOT dump the raw data. "
         "Structure the answer as: 1) one-sentence conclusion, 2) top 3 priority SKU-store actions, "
         "3) decision logic, 4) recommended next action. "
+        "When answering A/B test or impact questions, explain stockout rate, service level, total SCM cost, "
+        "and the top city/category improvement drivers. "
         "Use short bullets and explain stock, ROP, forecast demand, and order quantity in plain language. "
         "Keep answers concise, executive-friendly, readable, and specific."
     )
