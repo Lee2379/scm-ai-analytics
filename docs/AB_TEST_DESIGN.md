@@ -1,14 +1,14 @@
-# A/B Test Simulation and SCM KPI Impact Evaluation
+# A/B-Style Offline Policy Evaluation and SCM KPI Impact
 
 ## Purpose
 
-This document explains the A/B test simulation added to the SCM analytics portfolio. The goal is to show how AI-driven replenishment and store-transfer recommendations can be evaluated against a baseline inventory policy using business KPIs, not only dashboard visuals.
+This document explains the A/B-style offline policy evaluation added to the SCM analytics portfolio. The goal is to show how AI-driven replenishment and store-transfer recommendations can be evaluated against a baseline inventory policy using business KPIs, not only dashboard visuals.
 
-This is a portfolio-grade simulation based on reproducible demo data. It is not presented as a live production A/B test.
+This is a portfolio-grade simulation based on reproducible demo data. It is not presented as a live production A/B test or a randomized field experiment.
 
 ## Japanese Summary
 
-本ドキュメントは、AIによる補充推奨・店舗間在庫移動推奨が、従来の在庫運用方針と比較してSCM KPIをどの程度改善できるかを検証するA/Bテストシミュレーションの設計を説明します。
+本ドキュメントは、AIによる補充推奨・店舗間在庫移動推奨が、従来の在庫運用方針と比較してSCM KPIをどの程度改善できるかを検証するA/B形式のオフライン政策評価の設計を説明します。
 
 実運用の本番A/Bテストではなく、公開用デモデータに基づくポートフォリオ向けのオフライン政策評価フレームワークです。効果を単なるダッシュボード上の差分として見せるだけでなく、同一のSKU・店舗ペアを比較単位として、p値を含む統計的な検定も行います。
 
