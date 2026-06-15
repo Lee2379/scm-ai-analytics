@@ -582,7 +582,11 @@ with tab_ab:
     st.subheader("A/B Test Simulation: SCM KPI Impact")
     st.caption(
         "Control = baseline ROP policy. Treatment = AI replenishment recommendation plus store-transfer policy. "
-        "This is a portfolio simulation based on the repository's SCM demo data, not a live production experiment."
+        "This is a portfolio simulation based on the repository's SCM demo data, not a randomized production A/B test."
+    )
+    st.info(
+        "Interpretation note: the large KPI deltas are controlled synthetic-scenario results, not production savings claims. "
+        "A real rollout would require stronger baselines, pilot stores, operational constraints, and sensitivity checks."
     )
     st.caption(
         "日本語: 従来のROP在庫運用と、AI補充推奨・店舗間移動を組み合わせた施策を比較する、"

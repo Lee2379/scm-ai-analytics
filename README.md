@@ -4,7 +4,7 @@ SCM analytics and decision-support dashboard for global fashion retail operation
 
 This project is a Streamlit-based SCM decision-support dashboard for global fashion retail. It connects demand forecasting, SKU-store inventory policy, reorder-point calculation, AI-assisted replenishment recommendations, inter-store transfer recommendations, A/B-style offline policy evaluation, and an SCM Manager Agent into one practical business workflow.
 
-## 日本企業向けポートフォリオ要約
+## 日本語概要
 
 本プロジェクトは、ファッション小売・流通業におけるSCM意思決定を想定した、AI・データ分析・業務ロジック統合型のダッシュボードです。欠品、過剰在庫、補充優先度、店舗間在庫移動といった現場課題を、需要予測、発注点、安全在庫、補充推奨、Streamlit可視化、SCM Manager Agentによる自然言語確認まで含めた一つの業務フローとして実装しています。
 
@@ -18,7 +18,7 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 | 効果検証 | A/B形式のオフライン政策評価で、AI推奨施策のSCM KPI改善とp値を確認 |
 | 示せる力 | 業務課題をデータ構造、分析ロジック、AI支援UIへ落とし込む力 |
 
-日本の大企業における小売、製造、物流、商社、DX部門向けに、データ分析を単なる可視化で終わらせず、業務判断に使える意思決定支援システムとして設計したポートフォリオです。機密情報、顧客情報、実企業の内部データは含みません。
+小売、製造、物流、商社、DX部門などで想定されるSCM課題に対し、データ分析を単なる可視化で終わらせず、業務判断に使える意思決定支援システムとして設計しています。機密情報、顧客情報、実企業の内部データは含みません。
 
 ## Project Scope
 
@@ -142,6 +142,10 @@ This project extends the SCM dashboard into an impact-evaluation workflow. The s
 
 ### Simulation Results
 
+These values are intentionally treated as **simulation outputs**, not production impact claims. The large improvement is driven by the controlled demo setup: the Control policy is a simple ROP-only baseline under the same SKU-store demand scenario, while the Treatment policy uses forecast-aware replenishment and store-transfer logic. In a real rollout, I would validate the effect with historical backtesting, pilot stores, randomized or matched rollout design, operational constraints, and sensitivity checks before making any business claim.
+
+日本語: 以下の数値は本番環境で観測された実績ではなく、合成SCMデモデータに基づくオフライン政策評価の結果です。改善幅が大きい理由は、Controlを単純なROP運用、Treatmentを予測・補充・店舗間移動を含む施策として比較しているためです。実運用では、過去データでのバックテスト、パイロット店舗、ランダム化またはマッチング設計、制約条件、感度分析を行ってから効果を判断します。
+
 | KPI | Control | Treatment | Impact |
 | --- | ---: | ---: | ---: |
 | Stockout rate | 71.7% | 1.7% | -70.0 pp |
@@ -163,6 +167,17 @@ The A/B section also includes hypothesis testing to keep the impact evaluation g
 
 Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
+### AI Agent Implementation
+
+The SCM Manager Agent is implemented with a deterministic local fallback first, and optional LLM integration second:
+
+- **Default behavior:** rule-based local responses from `src/agent.py`, using the current CSV tables for inventory policy, replenishment recommendations, transfers, and A/B evaluation summaries.
+- **Optional LLM path:** if `GEMINI_API_KEY` or `GOOGLE_API_KEY` is available, the app calls the Google GenAI SDK and supplies only the generated SCM context. The prompt instructs the model to use only supplied data and not invent numbers.
+- **Fallback behavior:** if no API key is configured, the SDK is missing, or the API call fails, the app returns a local rule-based answer instead of breaking the demo.
+- **Privacy note:** API keys are never committed to Git and must be provided through environment variables or local Streamlit secrets.
+
+日本語: Agentは、まずローカルのルールベース応答で安定して動作し、APIキーがある場合のみGemini互換のLLM応答を利用します。LLMにはCSVから生成したSCM文脈のみを渡し、数値を作らないように制御しています。APIキーがない場合や接続に失敗した場合も、ローカル応答でデモを継続できます。
+
 ## Key Features
 
 - Demand forecasting by SKU and store (SKU・店舗別需要予測)
@@ -178,7 +193,7 @@ Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
 ### A/B Impact Evaluation (A/B効果検証)
 
-![A/B KPI impact evaluation comparing baseline ROP and AI recommendation policies](assets/screenshots/dashboard-ab-kpi-impact.png)
+![A/B KPI impact evaluation with synthetic-simulation caveat](assets/screenshots/dashboard-ab-kpi-impact-with-caveat.png)
 
 ### Logistics Improvement Priority (物流改善優先順位)
 
@@ -243,6 +258,7 @@ ai-scm-data-analysis-project/
   assets/
     screenshots/
       dashboard-ab-kpi-impact.png
+      dashboard-ab-kpi-impact-with-caveat.png
       dashboard-ab-improvement-drivers.png
       dashboard-risk-overview.jpg
       dashboard-demand-forecast.jpg
