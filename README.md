@@ -134,6 +134,7 @@ This project extends the SCM dashboard into an impact-evaluation workflow. The s
 | Treatment policy | AI recommendation quantity plus store-transfer recommendation |
 | Primary KPI | Total SCM cost proxy |
 | Guardrail KPIs | Stockout rate, overstock rate, service level, lost sales proxy, holding cost, transfer cost |
+| Statistical testing | Paired t-test for continuous KPI deltas; McNemar exact test for paired stockout outcomes |
 | Business question | Where should logistics and replenishment operations improve first? |
 
 ### Simulation Results
@@ -145,7 +146,17 @@ This project extends the SCM dashboard into an impact-evaluation workflow. The s
 | Lost sales proxy | JPY 52,092,554 | JPY 153,230 | -JPY 51,939,324 |
 | Total SCM cost proxy | JPY 52,510,587 | JPY 1,616,646 | -96.9% |
 
+### Hypothesis Testing
+
+The A/B section also includes hypothesis testing to keep the impact evaluation grounded in data science methodology. Because the same `store_id × sku_id` units are evaluated under both policies, the analysis uses paired tests:
+
+- H0: the AI treatment does not improve the KPI versus the baseline ROP policy.
+- Continuous KPIs such as total SCM cost, lost-sales proxy, and service level use paired t-tests.
+- Binary stockout outcomes use McNemar's exact test.
+- p-values are reported as part of the dashboard and reproducible CSV output.
+
 日本語では、従来のROP在庫運用をControl、AI補充推奨と店舗間移動を組み合わせた施策をTreatmentとして比較し、欠品率、サービスレベル、販売機会損失、総SCMコストの改善を検証する設計にしています。
+同一のSKU・店舗ペアを比較単位とし、連続値KPIには対応のあるt検定、欠品有無にはMcNemar正確検定を用いて、p値に基づく効果検証も示しています。
 
 Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 

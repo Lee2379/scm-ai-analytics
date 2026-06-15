@@ -10,7 +10,7 @@ This is a portfolio-grade simulation based on reproducible demo data. It is not 
 
 本ドキュメントは、AIによる補充推奨・店舗間在庫移動推奨が、従来の在庫運用方針と比較してSCM KPIをどの程度改善できるかを検証するA/Bテストシミュレーションの設計を説明します。
 
-実運用の本番A/Bテストではなく、公開用デモデータに基づくポートフォリオ向けの効果検証フレームワークです。
+実運用の本番A/Bテストではなく、公開用デモデータに基づくポートフォリオ向けのオフライン政策評価フレームワークです。効果を単なるダッシュボード上の差分として見せるだけでなく、同一のSKU・店舗ペアを比較単位として、p値を含む統計的な検定も行います。
 
 ## Experiment Design
 
@@ -22,6 +22,7 @@ This is a portfolio-grade simulation based on reproducible demo data. It is not 
 | Treatment policy | AI replenishment recommendation plus store-transfer recommendation |
 | Primary KPI | Total SCM cost proxy |
 | Guardrail KPIs | Stockout rate, overstock rate, service level, lost sales proxy, holding cost, transfer cost |
+| Statistical testing | Paired t-test for continuous KPI deltas; McNemar exact test for paired binary stockout outcomes |
 
 ## Policy Logic
 
@@ -70,6 +71,21 @@ This represents an AI-assisted policy that uses forecast demand, safety stock, a
 | Service level | 64.4% | 99.8% | +35.4 pp |
 | Lost sales proxy | JPY 52,092,554 | JPY 153,230 | -JPY 51,939,324 |
 | Total SCM cost proxy | JPY 52,510,587 | JPY 1,616,646 | -96.9% |
+
+## Hypothesis Testing
+
+Because the same `store_id x sku_id` units are evaluated under both the Control and Treatment policies, this simulation is treated as a paired policy evaluation rather than an independent-sample experiment.
+
+| KPI type | Null hypothesis | Test |
+| --- | --- | --- |
+| Total SCM cost proxy | The AI treatment does not reduce mean total SCM cost versus the baseline policy. | Paired t-test |
+| Lost sales proxy | The AI treatment does not reduce mean lost-sales proxy versus the baseline policy. | Paired t-test |
+| Service level | The AI treatment does not increase mean service level versus the baseline policy. | Paired t-test |
+| Stockout flag | The probability of stockout improvement is not greater than the probability of stockout worsening. | McNemar exact test |
+
+The generated file `data/ab_test_statistical_tests.csv` reports the sample size, mean improvement, 95% confidence interval where appropriate, test statistic, raw p-value, display p-value, and 0.05-level significance flag. The dashboard uses the business-friendly significance label `p < 0.05` while preserving the raw p-value in the CSV.
+
+Japanese note: 同一のSKU・店舗ペアに対してControlとTreatmentを比較するため、独立した2群比較ではなく対応のある検定として扱います。連続値KPIには対応のあるt検定、欠品有無のような二値KPIにはMcNemar正確検定を使います。
 
 ## Business Interpretation
 

@@ -90,6 +90,7 @@ def load_tables() -> dict[str, pd.DataFrame]:
         "ab_results": pd.read_csv(DATA_DIR / "ab_test_results.csv"),
         "ab_summary": pd.read_csv(DATA_DIR / "ab_test_kpi_summary.csv"),
         "ab_segments": pd.read_csv(DATA_DIR / "ab_test_segment_summary.csv"),
+        "ab_tests": pd.read_csv(DATA_DIR / "ab_test_statistical_tests.csv"),
     }
 
 
@@ -101,6 +102,7 @@ def data_ready() -> bool:
         "ab_test_results.csv",
         "ab_test_kpi_summary.csv",
         "ab_test_segment_summary.csv",
+        "ab_test_statistical_tests.csv",
     ]
     return all((DATA_DIR / name).exists() for name in required_files)
 
@@ -394,6 +396,7 @@ transfers = tables["transfers"]
 ab_results = tables["ab_results"]
 ab_summary = tables["ab_summary"]
 ab_segments = tables["ab_segments"]
+ab_tests = tables["ab_tests"]
 
 with st.sidebar:
     st.subheader(tr(lang, "Controls", JP["controls"], "컨트롤"))
@@ -582,7 +585,8 @@ with tab_ab:
         "This is a portfolio simulation based on the repository's SCM demo data, not a live production experiment."
     )
     st.caption(
-        "日本語: 従来のROP在庫運用と、AI補充推奨・店舗間移動を組み合わせた施策を比較するA/Bテスト設計シミュレーションです。"
+        "日本語: 従来のROP在庫運用と、AI補充推奨・店舗間移動を組み合わせた施策を比較する、"
+        "公開デモデータに基づくオフライン政策評価シミュレーションです。"
     )
 
     control = ab_summary[ab_summary["group"].str.contains("Control")].iloc[0]
@@ -631,6 +635,34 @@ with tab_ab:
         st.plotly_chart(cost_fig, use_container_width=True)
     with right:
         st.plotly_chart(rate_fig, use_container_width=True)
+
+    st.subheader("Hypothesis Test and p-value")
+    st.caption(
+        "Methodology: paired t-test for continuous KPI deltas and McNemar exact test for paired stockout outcomes. "
+        "H0 means the AI treatment does not improve the KPI versus the baseline policy."
+    )
+    st.caption(
+        "日本語: SKU・店舗ペアを同一単位として比較し、連続値KPIは対応のあるt検定、"
+        "欠品有無はMcNemar正確検定でp値を算出しています。"
+    )
+    st.dataframe(
+        ab_tests[
+            [
+                "metric",
+                "null_hypothesis",
+                "test",
+                "sample_size",
+                "mean_improvement",
+                "confidence_interval_95",
+                "test_statistic",
+                "p_value_display",
+                "significance_0_05",
+                "business_interpretation",
+            ]
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
 
     segment_cost = ab_segments.pivot_table(
         index=["city", "category"],

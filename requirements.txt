@@ -3,5 +3,6 @@ numpy
 streamlit
 plotly
 requests
+scipy
 scikit-learn
 google-genai

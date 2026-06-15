@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import pandas as pd
+from scipy import stats
 
 
 TRANSFER_COST_PER_UNIT = 120
@@ -79,6 +81,145 @@ def _evaluate_policy(df: pd.DataFrame, group: str, order_col: str, transfer_enab
     return result
 
 
+def _paired_t_test(control: pd.Series, treatment: pd.Series, direction: str) -> dict[str, float | str]:
+    if direction not in {"increase", "decrease"}:
+        raise ValueError("direction must be either 'increase' or 'decrease'")
+
+    improvement = treatment - control if direction == "increase" else control - treatment
+    improvement = improvement.dropna()
+    sample_size = int(improvement.shape[0])
+    mean_improvement = float(improvement.mean())
+    std_improvement = float(improvement.std(ddof=1))
+
+    if sample_size < 2 or std_improvement == 0:
+        p_value = 0.0 if mean_improvement > 0 else 1.0
+        ci_low = mean_improvement
+        ci_high = mean_improvement
+        t_stat = math.inf if mean_improvement > 0 else 0.0
+    else:
+        standard_error = std_improvement / math.sqrt(sample_size)
+        t_stat = mean_improvement / standard_error
+        p_value = float(stats.t.sf(t_stat, df=sample_size - 1))
+        t_crit = float(stats.t.ppf(0.975, df=sample_size - 1))
+        ci_low = mean_improvement - t_crit * standard_error
+        ci_high = mean_improvement + t_crit * standard_error
+
+    return {
+        "test": "Paired t-test",
+        "sample_size": sample_size,
+        "mean_improvement": round(mean_improvement, 4),
+        "confidence_interval_95": f"[{ci_low:.4f}, {ci_high:.4f}]",
+        "test_statistic": round(float(t_stat), 4) if math.isfinite(t_stat) else "inf",
+        "p_value": p_value,
+    }
+
+
+def _mcnemar_exact_test(control: pd.Series, treatment: pd.Series) -> dict[str, float | str]:
+    control_bool = control.astype(bool)
+    treatment_bool = treatment.astype(bool)
+    improved = int((control_bool & ~treatment_bool).sum())
+    worsened = int((~control_bool & treatment_bool).sum())
+    discordant = improved + worsened
+    p_value = 1.0 if discordant == 0 else float(stats.binomtest(improved, discordant, 0.5, alternative="greater").pvalue)
+
+    return {
+        "test": "McNemar exact test",
+        "sample_size": int(control_bool.shape[0]),
+        "mean_improvement": round(float(control_bool.mean() - treatment_bool.mean()), 4),
+        "confidence_interval_95": "Not reported for exact McNemar test",
+        "test_statistic": f"improved={improved}, worsened={worsened}",
+        "p_value": p_value,
+    }
+
+
+def _build_statistical_tests(results: pd.DataFrame) -> pd.DataFrame:
+    paired = (
+        results.pivot_table(
+            index=["store_id", "sku_id"],
+            columns="group",
+            values=[
+                "total_scm_cost_jpy",
+                "lost_sales_proxy_jpy",
+                "service_level",
+                "stockout_flag",
+            ],
+            aggfunc="first",
+        )
+        .dropna()
+    )
+
+    control_label = "Control: baseline ROP policy"
+    treatment_label = "Treatment: AI recommendation policy"
+    test_specs = [
+        {
+            "metric": "Total SCM cost proxy",
+            "null_hypothesis": "The AI treatment does not reduce mean total SCM cost versus the baseline policy.",
+            "alternative_hypothesis": "The AI treatment reduces mean total SCM cost versus the baseline policy.",
+            "method": _paired_t_test(
+                paired[("total_scm_cost_jpy", control_label)],
+                paired[("total_scm_cost_jpy", treatment_label)],
+                direction="decrease",
+            ),
+            "business_interpretation": "Tests whether AI recommendations reduce overall SCM cost at the SKU-store level.",
+        },
+        {
+            "metric": "Lost sales proxy",
+            "null_hypothesis": "The AI treatment does not reduce mean lost-sales proxy versus the baseline policy.",
+            "alternative_hypothesis": "The AI treatment reduces mean lost-sales proxy versus the baseline policy.",
+            "method": _paired_t_test(
+                paired[("lost_sales_proxy_jpy", control_label)],
+                paired[("lost_sales_proxy_jpy", treatment_label)],
+                direction="decrease",
+            ),
+            "business_interpretation": "Tests whether AI recommendations reduce forecast-period lost-sales exposure.",
+        },
+        {
+            "metric": "Service level",
+            "null_hypothesis": "The AI treatment does not increase mean service level versus the baseline policy.",
+            "alternative_hypothesis": "The AI treatment increases mean service level versus the baseline policy.",
+            "method": _paired_t_test(
+                paired[("service_level", control_label)],
+                paired[("service_level", treatment_label)],
+                direction="increase",
+            ),
+            "business_interpretation": "Tests whether AI recommendations improve demand fulfillment at the SKU-store level.",
+        },
+        {
+            "metric": "Stockout flag",
+            "null_hypothesis": "The probability of stockout improvement is not greater than the probability of stockout worsening.",
+            "alternative_hypothesis": "The AI treatment reduces stockout occurrence versus the baseline policy.",
+            "method": _mcnemar_exact_test(
+                paired[("stockout_flag", control_label)],
+                paired[("stockout_flag", treatment_label)],
+            ),
+            "business_interpretation": "Tests whether paired stockout outcomes improve more often than they worsen.",
+        },
+    ]
+
+    rows = []
+    for spec in test_specs:
+        method = spec["method"]
+        p_value = float(method["p_value"])
+        p_value_display = "p < 0.05" if p_value < 0.05 else "p >= 0.05"
+        rows.append(
+            {
+                "metric": spec["metric"],
+                "null_hypothesis": spec["null_hypothesis"],
+                "alternative_hypothesis": spec["alternative_hypothesis"],
+                "test": method["test"],
+                "sample_size": method["sample_size"],
+                "mean_improvement": method["mean_improvement"],
+                "confidence_interval_95": method["confidence_interval_95"],
+                "test_statistic": method["test_statistic"],
+                "p_value": float(f"{p_value:.12g}"),
+                "p_value_display": p_value_display,
+                "significance_0_05": p_value < 0.05,
+                "business_interpretation": spec["business_interpretation"],
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     data_dir = Path(data_dir)
     inputs = load_inputs(data_dir)
@@ -151,6 +292,7 @@ def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
         )
         .round(3)
     )
+    statistical_tests = _build_statistical_tests(results)
 
     results = results.round(
         {
@@ -172,10 +314,12 @@ def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     results.to_csv(data_dir / "ab_test_results.csv", index=False)
     metric_summary.to_csv(data_dir / "ab_test_kpi_summary.csv", index=False)
     segment_summary.to_csv(data_dir / "ab_test_segment_summary.csv", index=False)
+    statistical_tests.to_csv(data_dir / "ab_test_statistical_tests.csv", index=False)
     return {
         "ab_results": results,
         "ab_kpi_summary": metric_summary,
         "ab_segment_summary": segment_summary,
+        "ab_statistical_tests": statistical_tests,
     }
 
 
