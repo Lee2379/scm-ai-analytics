@@ -200,6 +200,8 @@ Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
 ![SCM Manager Agent answering an A/B impact and reorder-priority question](assets/screenshots/dashboard-ai-agent-impact-question.png)
 
+![Focused SCM chatbot interaction for A/B-based reorder prioritization](assets/screenshots/dashboard-ai-agent-chatbot-detail.png)
+
 ## SCM Logic
 
 ```text
