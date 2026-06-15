@@ -173,6 +173,14 @@ Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
 ## Dashboard Screenshots
 
+### A/B Impact Evaluation (A/B効果検証)
+
+![A/B KPI impact evaluation comparing baseline ROP and AI recommendation policies](assets/screenshots/dashboard-ab-kpi-impact.png)
+
+### Logistics Improvement Priority (物流改善優先順位)
+
+![Cost-reduction drivers by city and product category](assets/screenshots/dashboard-ab-improvement-drivers.png)
+
 ### Inventory Risk and Replenishment Overview (在庫リスク・補充推奨)
 
 ![Inventory risk distribution and top replenishment recommendations](assets/screenshots/dashboard-risk-overview.jpg)
