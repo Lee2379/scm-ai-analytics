@@ -101,7 +101,7 @@ Because the same `store_id x sku_id` units are evaluated under both the baseline
 | Service level | The AI-assisted candidate policy does not increase mean service level versus the baseline policy. | Paired t-test |
 | Stockout flag | The probability of stockout improvement is not greater than the probability of stockout worsening. | McNemar exact test |
 
-The generated file `data/ab_test_statistical_tests.csv` reports the sample size, mean improvement, 95% confidence interval where appropriate, test statistic, raw p-value, display p-value, and 0.05-level significance flag. The dashboard uses the business-friendly significance label `p < 0.05` while preserving the raw p-value in the CSV.
+The generated file `data/policy_eval_statistical_tests.csv` reports the sample size, mean improvement, 95% confidence interval where appropriate, test statistic, raw p-value, display p-value, and 0.05-level significance flag. The dashboard uses the business-friendly significance label `p < 0.05` while preserving the raw p-value in the CSV.
 
 Statistical disclaimer: these p-values only evaluate paired differences under the synthetic simulation assumptions. They do not prove real-world causal impact, and they should be interpreted together with effect sizes, confidence intervals, sensitivity checks, and operational validation.
 
@@ -119,6 +119,8 @@ The dashboard also exposes the row-level policy output used behind the KPI summa
 
 The simulation suggests that the largest improvement opportunity is reducing lost-sales exposure while slightly improving service level. The stockout flag remains high because it is defined strictly as `lost_sales_units > 0`, so even a small shortage counts as a stockout. This is why the stockout-rate difference is intentionally interpreted conservatively.
 
+This stockout flag is a simulated forecast-period shortage metric. It should not be confused with the current inventory-status count shown in the overview dashboard.
+
 The result should be read as a demonstration of evaluation design and SCM decision logic. It should not be read as evidence that a real company would automatically achieve the same cost reduction without operational validation.
 
 For a real company setting, this framework would be used before rollout to answer:
@@ -130,4 +132,4 @@ For a real company setting, this framework would be used before rollout to answe
 
 ## Portfolio Relevance
 
-This addition strengthens the project from a dashboard demo into a business-impact evaluation case study. It shows the ability to connect SCM analytics, AI recommendations, KPI design, and policy evaluation in a way that is relevant for Japanese retail, manufacturing, logistics, trading-company, and DX roles.
+This addition strengthens the project from a dashboard demo into a business-oriented policy-evaluation case study. It shows the ability to connect SCM analytics, AI recommendations, KPI design, and policy evaluation in a way that is relevant for Japanese retail, manufacturing, logistics, trading-company, and DX roles.

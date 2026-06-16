@@ -87,10 +87,10 @@ def load_tables() -> dict[str, pd.DataFrame]:
         "recommendations": pd.read_csv(DATA_DIR / "recommendations.csv"),
         "forecast": pd.read_csv(DATA_DIR / "forecast.csv", parse_dates=["date"]),
         "transfers": pd.read_csv(DATA_DIR / "transfer_recommendations.csv"),
-        "ab_results": pd.read_csv(DATA_DIR / "ab_test_results.csv"),
-        "ab_summary": pd.read_csv(DATA_DIR / "ab_test_kpi_summary.csv"),
-        "ab_segments": pd.read_csv(DATA_DIR / "ab_test_segment_summary.csv"),
-        "ab_tests": pd.read_csv(DATA_DIR / "ab_test_statistical_tests.csv"),
+        "policy_results": pd.read_csv(DATA_DIR / "policy_eval_results.csv"),
+        "policy_summary": pd.read_csv(DATA_DIR / "policy_eval_kpi_summary.csv"),
+        "policy_segments": pd.read_csv(DATA_DIR / "policy_eval_segment_summary.csv"),
+        "policy_tests": pd.read_csv(DATA_DIR / "policy_eval_statistical_tests.csv"),
     }
 
 
@@ -99,10 +99,10 @@ def data_ready() -> bool:
         "sales.csv",
         "inventory_policy.csv",
         "recommendations.csv",
-        "ab_test_results.csv",
-        "ab_test_kpi_summary.csv",
-        "ab_test_segment_summary.csv",
-        "ab_test_statistical_tests.csv",
+        "policy_eval_results.csv",
+        "policy_eval_kpi_summary.csv",
+        "policy_eval_segment_summary.csv",
+        "policy_eval_statistical_tests.csv",
     ]
     return all((DATA_DIR / name).exists() for name in required_files)
 
@@ -393,10 +393,10 @@ policy = policy.merge(stores[["store_id", "city", "store_type"]], on="store_id",
 recs = tables["recommendations"].merge(products[["sku_id", "product_name", "category"]], on="sku_id", how="left")
 forecast = tables["forecast"].merge(products[["sku_id", "product_name"]], on="sku_id", how="left")
 transfers = tables["transfers"]
-ab_results = tables["ab_results"]
-ab_summary = tables["ab_summary"]
-ab_segments = tables["ab_segments"]
-ab_tests = tables["ab_tests"]
+policy_results = tables["policy_results"]
+policy_summary = tables["policy_summary"]
+policy_segments = tables["policy_segments"]
+policy_tests = tables["policy_tests"]
 
 with st.sidebar:
     st.subheader(tr(lang, "Controls", JP["controls"], "컨트롤"))
@@ -593,8 +593,8 @@ with tab_ab:
         "合成デモデータに基づくオフライン政策評価シミュレーションです。"
     )
 
-    control = ab_summary[ab_summary["group"].str.contains("Baseline")].iloc[0]
-    treatment = ab_summary[ab_summary["group"].str.contains("Candidate")].iloc[0]
+    control = policy_summary[policy_summary["group"].str.contains("Baseline")].iloc[0]
+    treatment = policy_summary[policy_summary["group"].str.contains("Candidate")].iloc[0]
     cost_reduction_pct = float(treatment["cost_reduction_vs_control_pct"]) * 100
     cost_reduction_jpy = float(control["total_scm_cost_jpy"] - treatment["total_scm_cost_jpy"])
     stockout_reduction_pp = float(control["stockout_rate"] - treatment["stockout_rate"]) * 100
@@ -608,7 +608,7 @@ with tab_ab:
     kpi4.metric("Lost-sales reduction", f"JPY {lost_sales_reduction_jpy:,.0f}")
 
     cost_fig = px.bar(
-        ab_summary,
+        policy_summary,
         x="group",
         y="total_scm_cost_jpy",
         color="group",
@@ -617,7 +617,7 @@ with tab_ab:
     )
     cost_fig.update_layout(showlegend=False, height=390, paper_bgcolor="white", plot_bgcolor="white")
 
-    rate_long = ab_summary.melt(
+    rate_long = policy_summary.melt(
         id_vars=["group"],
         value_vars=["stockout_rate", "service_level"],
         var_name="metric",
@@ -650,7 +650,7 @@ with tab_ab:
         "欠品有無はMcNemar正確検定でp値を算出しています。"
     )
     st.dataframe(
-        ab_tests[
+        policy_tests[
             [
                 "metric",
                 "null_hypothesis",
@@ -669,7 +669,7 @@ with tab_ab:
         hide_index=True,
     )
 
-    segment_cost = ab_segments.pivot_table(
+    segment_cost = policy_segments.pivot_table(
         index=["city", "category"],
         columns="group",
         values="total_scm_cost_jpy",
@@ -705,7 +705,7 @@ with tab_ab:
 
     st.subheader("Offline Policy Evaluation Detail Table")
     st.dataframe(
-        ab_results[
+        policy_results[
             [
                 "group",
                 "city",

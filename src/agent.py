@@ -18,12 +18,12 @@ def load_agent_tables(data_dir: str | Path) -> dict[str, pd.DataFrame]:
         "products": pd.read_csv(data_dir / "products.csv"),
         "stores": pd.read_csv(data_dir / "stores.csv"),
     }
-    ab_summary = data_dir / "ab_test_kpi_summary.csv"
-    ab_segments = data_dir / "ab_test_segment_summary.csv"
-    if ab_summary.exists():
-        tables["ab_summary"] = pd.read_csv(ab_summary)
-    if ab_segments.exists():
-        tables["ab_segments"] = pd.read_csv(ab_segments)
+    policy_summary = data_dir / "policy_eval_kpi_summary.csv"
+    policy_segments = data_dir / "policy_eval_segment_summary.csv"
+    if policy_summary.exists():
+        tables["policy_summary"] = pd.read_csv(policy_summary)
+    if policy_segments.exists():
+        tables["policy_segments"] = pd.read_csv(policy_segments)
     return tables
 
 
@@ -106,10 +106,10 @@ def build_scm_context(tables: dict[str, pd.DataFrame]) -> str:
             f"{int(row.transfer_qty)} units of {row.product_name}."
         )
 
-    if "ab_summary" in tables:
-        ab_summary = tables["ab_summary"]
-        control = ab_summary[ab_summary["group"].str.contains("Baseline")].iloc[0]
-        treatment = ab_summary[ab_summary["group"].str.contains("Candidate")].iloc[0]
+    if "policy_summary" in tables:
+        policy_summary = tables["policy_summary"]
+        control = policy_summary[policy_summary["group"].str.contains("Baseline")].iloc[0]
+        treatment = policy_summary[policy_summary["group"].str.contains("Candidate")].iloc[0]
         lines.extend(
             [
                 "",
@@ -122,8 +122,8 @@ def build_scm_context(tables: dict[str, pd.DataFrame]) -> str:
             ]
         )
 
-    if "ab_segments" in tables:
-        segments = tables["ab_segments"]
+    if "policy_segments" in tables:
+        segments = tables["policy_segments"]
         pivot = segments.pivot_table(
             index=["city", "category"],
             columns="group",

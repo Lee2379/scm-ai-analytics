@@ -25,7 +25,7 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 - Domain: fashion retail SCM and inventory operations (ファッション小売SCM・在庫業務)
 - Focus areas: demand forecasting, inventory policy, replenishment planning, and store-transfer decisions (需要予測・在庫ポリシー・補充計画・店舗間移動)
 - Decision level: SKU-store-level risk monitoring and action prioritization (SKU・店舗単位のリスク監視と優先順位付け)
-- Impact evaluation: simulation-based offline policy evaluation comparing a baseline planner policy vs a constrained AI-assisted policy (合成シミュレーションに基づくオフライン政策比較)
+- Policy evaluation: simulation-based offline policy evaluation comparing a baseline planner policy vs a constrained AI-assisted policy (合成シミュレーションに基づくオフライン政策比較)
 - Data scope: public-data-inspired synthetic SCM data only. No private company data is included. (公開データを参考にした合成SCMデータのみを使用)
 
 ## Japanese Summary
@@ -71,7 +71,9 @@ EDAでは、予測・発注点・店舗間移動ロジックを適用する前�
 | Granularity (分析粒度) | SCM decision unit | 60 SKU-store combinations |
 | Inventory risk (在庫リスク) | Stock status distribution | 26 stockout-risk cases and 3 overstock cases |
 | Recommendation output (推奨結果) | Action table coverage | 60 replenishment records and 8 store-transfer recommendations |
-| Offline policy evaluation (効果検証) | Baseline vs constrained AI-assisted policy comparison | 60 SKU-store units evaluated across stockout, service level, lost sales, total SCM cost, and p-value-based hypothesis tests |
+| Offline policy evaluation (オフライン政策比較) | Baseline vs constrained AI-assisted policy comparison | 60 SKU-store units evaluated across stockout, service level, lost sales, total SCM cost, and p-value-based hypothesis tests |
+
+Note: the `26 stockout-risk cases` in the overview are current inventory-status classifications. The `stockout rate` in the offline policy evaluation is a separate simulated 28-day forecast-period metric based on whether `lost_sales_units > 0`.
 
 EDA workflow:
 
@@ -120,7 +122,7 @@ flowchart TB
 | Data Design and EDA (データ設計・EDA) | Uses public retail datasets as references and validates SKU-store-level demand, inventory, and join keys. |
 | Forecast and SCM Logic (需要予測・SCMロジック) | Calculates safety stock, reorder point, stockout risk, replenishment quantity, and store-transfer candidates. |
 | AI-Assisted Recommendation (AI推奨) | Converts forecast and inventory signals into prioritized replenishment and transfer recommendations. |
-| Impact Evaluation (効果検証) | Compares baseline and constrained AI-assisted policies on the same SKU-store units using KPI deltas and hypothesis tests. |
+| Policy Evaluation (オフライン政策比較) | Compares baseline and constrained AI-assisted policies on the same SKU-store units using KPI deltas and hypothesis tests. |
 | Business Prioritization (業務改善優先順位) | Identifies the city and product categories where logistics improvement should start first. |
 | Decision Support Delivery (意思決定支援) | Provides a Streamlit dashboard and SCM Manager Agent for reviewing actions and reasoning. |
 
@@ -146,6 +148,8 @@ These values are treated as **simulation outputs**, not production impact claims
 
 日本語: 以下の数値は本番環境で観測された実績ではなく、合成SCMデモデータに基づくオフライン政策比較の結果です。ベースラインは単純なROPのみではなく、一定の需要予測ギャップを補う現実寄りの運用として設定し、AI支援施策も制約付きで評価しています。実運用では、過去データでのバックテスト、パイロット店舗、ランダム化またはマッチング設計、制約条件、感度分析を行ってから効果を判断します。
 
+The stockout-rate metric below is defined at the simulated 28-day policy-evaluation horizon. It is not the same metric as the current stock-status count shown in the overview dashboard.
+
 | KPI | Baseline | Candidate | Simulated difference |
 | --- | ---: | ---: | ---: |
 | Stockout rate | 71.7% | 70.0% | -1.7 pp |
@@ -166,7 +170,7 @@ The offline policy-evaluation section includes hypothesis testing to keep the co
 日本語では、ベースライン運用とAI補充推奨・店舗間移動を組み合わせた制約付き施策を比較し、欠品率、サービスレベル、販売機会損失、総SCMコストの差分を検証する設計にしています。
 同一のSKU・店舗ペアを比較単位とし、連続値KPIには対応のあるt検定、欠品有無にはMcNemar正確検定を用いています。ただし、p値は合成シミュレーション内の差分を評価するものであり、実運用での因果効果を証明するものではありません。
 
-Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
+Detailed design: [docs/OFFLINE_POLICY_EVALUATION.md](docs/OFFLINE_POLICY_EVALUATION.md)
 
 ### AI Agent Implementation
 
@@ -214,8 +218,6 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 
 ### SCM Manager Agent (SCMマネージャーAgent)
 
-![SCM Manager Agent answering an offline policy and reorder-priority question](assets/screenshots/dashboard-ai-agent-impact-question.png)
-
 ![Focused SCM chatbot interaction for policy-based reorder prioritization](assets/screenshots/dashboard-ai-agent-chatbot-detail.png)
 
 ## SCM Logic
@@ -253,9 +255,9 @@ ai-scm-data-analysis-project/
     forecast.csv
     recommendations.csv
     transfer_recommendations.csv
-    ab_test_results.csv
-    ab_test_kpi_summary.csv
-    ab_test_statistical_tests.csv
+    policy_eval_results.csv
+    policy_eval_kpi_summary.csv
+    policy_eval_statistical_tests.csv
   assets/
     screenshots/
       dashboard-policy-evaluation-app.png
@@ -264,14 +266,13 @@ ai-scm-data-analysis-project/
       dashboard-inventory-overview-app.png
       dashboard-demand-forecast-app.png
       dashboard-rop-policy-app.png
-      dashboard-ai-agent-impact-question.png
       dashboard-ai-agent-chatbot-detail.png
   src/
     agent.py
     scm_engine.py
-    ab_test_simulation.py
+    policy_evaluation_simulation.py
   docs/
-    AB_TEST_DESIGN.md
+    OFFLINE_POLICY_EVALUATION.md
 ```
 
 ## Setup
@@ -314,4 +315,3 @@ http://localhost:8502
 - `.env` and Streamlit secrets are ignored by Git.
 - The included data is simulated demo data.
 - Real API keys should be provided only through environment variables or local secrets.
-

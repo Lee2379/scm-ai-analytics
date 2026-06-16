@@ -231,7 +231,7 @@ def _build_statistical_tests(results: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
+def build_policy_evaluation_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     data_dir = Path(data_dir)
     inputs = load_inputs(data_dir)
 
@@ -341,17 +341,17 @@ def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
         }
     )
 
-    results.to_csv(data_dir / "ab_test_results.csv", index=False)
-    metric_summary.to_csv(data_dir / "ab_test_kpi_summary.csv", index=False)
-    segment_summary.to_csv(data_dir / "ab_test_segment_summary.csv", index=False)
-    statistical_tests.to_csv(data_dir / "ab_test_statistical_tests.csv", index=False)
+    results.to_csv(data_dir / "policy_eval_results.csv", index=False)
+    metric_summary.to_csv(data_dir / "policy_eval_kpi_summary.csv", index=False)
+    segment_summary.to_csv(data_dir / "policy_eval_segment_summary.csv", index=False)
+    statistical_tests.to_csv(data_dir / "policy_eval_statistical_tests.csv", index=False)
     return {
-        "ab_results": results,
-        "ab_kpi_summary": metric_summary,
-        "ab_segment_summary": segment_summary,
-        "ab_statistical_tests": statistical_tests,
+        "policy_results": results,
+        "policy_kpi_summary": metric_summary,
+        "policy_segment_summary": segment_summary,
+        "policy_statistical_tests": statistical_tests,
     }
 
 
 if __name__ == "__main__":
-    build_ab_test_outputs(Path(__file__).resolve().parents[1] / "data")
+    build_policy_evaluation_outputs(Path(__file__).resolve().parents[1] / "data")
