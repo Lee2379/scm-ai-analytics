@@ -194,23 +194,23 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 
 ### Offline Policy Evaluation (オフライン政策比較)
 
-![Offline policy evaluation with synthetic-simulation caveat](assets/screenshots/dashboard-ab-kpi-impact-with-caveat.png)
+![Offline policy evaluation dashboard with KPI cards and conservative simulation note](assets/screenshots/dashboard-policy-evaluation-app.png)
 
-### Logistics Improvement Priority (物流改善優先順位)
+### Hypothesis Test and Improvement Drivers (統計検定・改善優先順位)
 
-![Cost-reduction drivers by city and product category](assets/screenshots/dashboard-ab-improvement-drivers.png)
+![Hypothesis test table with p-values, effect sizes, confidence intervals, and improvement drivers](assets/screenshots/dashboard-policy-statistical-tests.png)
 
 ### Inventory Risk and Replenishment Overview (在庫リスク・補充推奨)
 
-![Inventory risk distribution and top replenishment recommendations](assets/screenshots/dashboard-risk-overview.jpg)
+![Inventory risk distribution and top replenishment recommendations](assets/screenshots/dashboard-inventory-overview-app.png)
 
 ### Demand Forecast and Sales Pattern (需要予測・販売パターン)
 
-![Demand forecast and recent sales pattern charts](assets/screenshots/dashboard-demand-forecast.jpg)
+![Demand forecast and recent sales pattern charts](assets/screenshots/dashboard-demand-forecast-app.png)
 
 ### SKU-Store ROP Policy (SKU・店舗別発注点ポリシー)
 
-![SKU-store-level ROP policy table](assets/screenshots/dashboard-rop-policy.jpg)
+![SKU-store-level ROP policy table](assets/screenshots/dashboard-rop-policy-app.png)
 
 ### SCM Manager Agent (SCMマネージャーAgent)
 
@@ -258,13 +258,14 @@ ai-scm-data-analysis-project/
     ab_test_statistical_tests.csv
   assets/
     screenshots/
-      dashboard-ab-kpi-impact.png
-      dashboard-ab-kpi-impact-with-caveat.png
-      dashboard-ab-improvement-drivers.png
-      dashboard-risk-overview.jpg
-      dashboard-demand-forecast.jpg
-      dashboard-rop-policy.jpg
+      dashboard-policy-evaluation-app.png
+      dashboard-policy-statistical-tests.png
+      dashboard-policy-detail-table.png
+      dashboard-inventory-overview-app.png
+      dashboard-demand-forecast-app.png
+      dashboard-rop-policy-app.png
       dashboard-ai-agent-impact-question.png
+      dashboard-ai-agent-chatbot-detail.png
   src/
     agent.py
     scm_engine.py
