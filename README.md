@@ -2,7 +2,7 @@
 
 SCM analytics and decision-support dashboard for global fashion retail operations.
 
-This project is a Streamlit-based SCM decision-support dashboard for global fashion retail. It connects demand forecasting, SKU-store inventory policy, reorder-point calculation, AI-assisted replenishment recommendations, inter-store transfer recommendations, A/B-style offline policy evaluation, and an SCM Manager Agent into one practical business workflow.
+This project is a Streamlit-based SCM decision-support dashboard for global fashion retail. It connects demand forecasting, SKU-store inventory policy, reorder-point calculation, AI-assisted replenishment recommendations, inter-store transfer recommendations, simulation-based offline policy evaluation, and an SCM Manager Agent into one practical business workflow.
 
 ## 日本語概要
 
@@ -15,7 +15,7 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 | 分析ロジック | 安全在庫、発注点、在庫リスク、補充推奨、店舗間移動推奨 |
 | アプリ実装 | Streamlit dashboardでリスク監視、予測、推奨アクションを可視化 |
 | AI Agent | SCM Manager向けに、在庫状況や推奨理由を自然言語で確認可能 |
-| 効果検証 | A/B形式のオフライン政策評価で、AI推奨施策のSCM KPI改善とp値を確認 |
+| 効果検証 | 合成シミュレーション上のオフライン政策比較で、AI推奨施策のSCM KPI差分とp値を確認 |
 | 示せる力 | 業務課題をデータ構造、分析ロジック、AI支援UIへ落とし込む力 |
 
 小売、製造、物流、商社、DX部門などで想定されるSCM課題に対し、データ分析を単なる可視化で終わらせず、業務判断に使える意思決定支援システムとして設計しています。機密情報、顧客情報、実企業の内部データは含みません。
@@ -25,7 +25,7 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 - Domain: fashion retail SCM and inventory operations (ファッション小売SCM・在庫業務)
 - Focus areas: demand forecasting, inventory policy, replenishment planning, and store-transfer decisions (需要予測・在庫ポリシー・補充計画・店舗間移動)
 - Decision level: SKU-store-level risk monitoring and action prioritization (SKU・店舗単位のリスク監視と優先順位付け)
-- Impact evaluation: A/B-style offline policy evaluation comparing baseline ROP policy vs AI recommendation policy (A/B形式のオフライン政策評価)
+- Impact evaluation: simulation-based offline policy evaluation comparing a baseline planner policy vs a constrained AI-assisted policy (合成シミュレーションに基づくオフライン政策比較)
 - Data scope: public-data-inspired synthetic SCM data only. No private company data is included. (公開データを参考にした合成SCMデータのみを使用)
 
 ## Japanese Summary
@@ -71,7 +71,7 @@ EDAでは、予測・発注点・店舗間移動ロジックを適用する前�
 | Granularity (分析粒度) | SCM decision unit | 60 SKU-store combinations |
 | Inventory risk (在庫リスク) | Stock status distribution | 26 stockout-risk cases and 3 overstock cases |
 | Recommendation output (推奨結果) | Action table coverage | 60 replenishment records and 8 store-transfer recommendations |
-| A/B-style policy evaluation (効果検証) | Control vs Treatment comparison | 60 SKU-store units evaluated across stockout, service level, lost sales, total SCM cost, and p-value-based hypothesis tests |
+| Offline policy evaluation (効果検証) | Baseline vs constrained AI-assisted policy comparison | 60 SKU-store units evaluated across stockout, service level, lost sales, total SCM cost, and p-value-based hypothesis tests |
 
 EDA workflow:
 
@@ -103,7 +103,7 @@ flowchart TB
     C["3. Data EDA<br/>SKU-store demand and risk patterns<br/>(探索的データ分析)"]
     D["4. Forecast and Inventory Logic<br/>Safety stock, ROP, reorder risk<br/>(需要予測・在庫ロジック)"]
     E["5. AI-Assisted Action Design<br/>Replenishment and store transfer<br/>(AI補充推奨・店舗間移動)"]
-    F["6. A/B-Style Policy Evaluation<br/>Control vs Treatment, p-value<br/>(効果検証・統計検定)"]
+    F["6. Offline Policy Evaluation<br/>Baseline vs AI-assisted policy<br/>(オフライン政策比較・統計検定)"]
     G["7. Business Prioritization<br/>Where logistics should improve first<br/>(物流改善優先順位)"]
     H["8. Dashboard and SCM Agent<br/>Decision support application<br/>(可視化・Agent支援)"]
 
@@ -120,21 +120,21 @@ flowchart TB
 | Data Design and EDA (データ設計・EDA) | Uses public retail datasets as references and validates SKU-store-level demand, inventory, and join keys. |
 | Forecast and SCM Logic (需要予測・SCMロジック) | Calculates safety stock, reorder point, stockout risk, replenishment quantity, and store-transfer candidates. |
 | AI-Assisted Recommendation (AI推奨) | Converts forecast and inventory signals into prioritized replenishment and transfer recommendations. |
-| Impact Evaluation (効果検証) | Compares Control and Treatment policies on the same SKU-store units using KPI deltas and hypothesis tests. |
+| Impact Evaluation (効果検証) | Compares baseline and constrained AI-assisted policies on the same SKU-store units using KPI deltas and hypothesis tests. |
 | Business Prioritization (業務改善優先順位) | Identifies the city and product categories where logistics improvement should start first. |
 | Decision Support Delivery (意思決定支援) | Provides a Streamlit dashboard and SCM Manager Agent for reviewing actions and reasoning. |
 
-## A/B-Style Policy Evaluation and SCM Impact
+## Simulation-Based Offline Policy Evaluation
 
-This project extends the SCM dashboard into an impact-evaluation workflow. The simulation compares a baseline inventory policy against an AI-assisted replenishment and store-transfer policy using the repository's SCM demo data.
+This project extends the SCM dashboard into an offline policy-evaluation workflow. The simulation compares a strengthened baseline planner policy against a constrained AI-assisted replenishment and store-transfer policy using the repository's SCM demo data.
 
-> This is a portfolio-grade offline policy evaluation, not a live production A/B experiment. It demonstrates how I would structure a data science evaluation before applying an AI recommendation system in a real SCM operation.
+> This is a simulation-based offline policy evaluation, not a live production experiment. The p-values only test paired differences between simulated policy outcomes; they do not prove real-world causal impact.
 
 | Component | Design |
 | --- | --- |
-| Experimental unit | `store_id × sku_id` |
-| Control policy | Baseline ROP replenishment without AI transfer optimization |
-| Treatment policy | AI recommendation quantity plus store-transfer recommendation |
+| Evaluation unit | `store_id × sku_id` |
+| Baseline policy | Planner-style replenishment based on ROP plus partial forecast-gap coverage |
+| Candidate policy | Constrained AI-assisted replenishment plus limited store-transfer realization |
 | Primary KPI | Total SCM cost proxy |
 | Guardrail KPIs | Stockout rate, overstock rate, service level, lost sales proxy, holding cost, transfer cost |
 | Statistical testing | Paired t-test for continuous KPI deltas; McNemar exact test for paired stockout outcomes |
@@ -142,28 +142,29 @@ This project extends the SCM dashboard into an impact-evaluation workflow. The s
 
 ### Simulation Results
 
-These values are intentionally treated as **simulation outputs**, not production impact claims. The large improvement is driven by the controlled demo setup: the Control policy is a simple ROP-only baseline under the same SKU-store demand scenario, while the Treatment policy uses forecast-aware replenishment and store-transfer logic. In a real rollout, I would validate the effect with historical backtesting, pilot stores, randomized or matched rollout design, operational constraints, and sensitivity checks before making any business claim.
+These values are treated as **simulation outputs**, not production impact claims. The baseline is intentionally stronger than a naive ROP-only rule, and the AI-assisted policy is constrained so that the result is read as a conservative policy-comparison demo rather than a realized business saving. In a real rollout, I would validate the effect with historical backtesting, pilot stores, randomized or matched rollout design, operational constraints, and sensitivity checks before making any business claim.
 
-日本語: 以下の数値は本番環境で観測された実績ではなく、合成SCMデモデータに基づくオフライン政策評価の結果です。改善幅が大きい理由は、Controlを単純なROP運用、Treatmentを予測・補充・店舗間移動を含む施策として比較しているためです。実運用では、過去データでのバックテスト、パイロット店舗、ランダム化またはマッチング設計、制約条件、感度分析を行ってから効果を判断します。
+日本語: 以下の数値は本番環境で観測された実績ではなく、合成SCMデモデータに基づくオフライン政策比較の結果です。ベースラインは単純なROPのみではなく、一定の需要予測ギャップを補う現実寄りの運用として設定し、AI支援施策も制約付きで評価しています。実運用では、過去データでのバックテスト、パイロット店舗、ランダム化またはマッチング設計、制約条件、感度分析を行ってから効果を判断します。
 
-| KPI | Control | Treatment | Impact |
+| KPI | Baseline | Candidate | Simulated difference |
 | --- | ---: | ---: | ---: |
-| Stockout rate | 71.7% | 1.7% | -70.0 pp |
-| Service level | 64.4% | 99.8% | +35.4 pp |
-| Lost sales proxy | JPY 52,092,554 | JPY 153,230 | -JPY 51,939,324 |
-| Total SCM cost proxy | JPY 52,510,587 | JPY 1,616,646 | -96.9% |
+| Stockout rate | 71.7% | 70.0% | -1.7 pp |
+| Service level | 92.9% | 94.9% | +2.0 pp |
+| Lost sales proxy | JPY 10,414,574 | JPY 7,476,636 | -JPY 2,937,938 |
+| Total SCM cost proxy | JPY 11,351,887 | JPY 8,493,779 | -25.2% |
 
 ### Hypothesis Testing
 
-The A/B section also includes hypothesis testing to keep the impact evaluation grounded in data science methodology. Because the same `store_id × sku_id` units are evaluated under both policies, the analysis uses paired tests:
+The offline policy-evaluation section includes hypothesis testing to keep the comparison grounded in data science methodology. Because the same `store_id × sku_id` units are evaluated under both policies, the analysis uses paired tests:
 
-- H0: the AI treatment does not improve the KPI versus the baseline ROP policy.
+- H0: the AI-assisted candidate policy does not improve the KPI versus the baseline planner policy.
 - Continuous KPIs such as total SCM cost, lost-sales proxy, and service level use paired t-tests.
 - Binary stockout outcomes use McNemar's exact test.
-- p-values are reported as part of the dashboard and reproducible CSV output.
+- p-values evaluate differences between simulated paired policy outcomes only; they do not establish real-world causal impact.
+- Effect size and 95% confidence intervals are reported alongside p-values so the magnitude and uncertainty of the simulated difference can be reviewed.
 
-日本語では、従来のROP在庫運用をControl、AI補充推奨と店舗間移動を組み合わせた施策をTreatmentとして比較し、欠品率、サービスレベル、販売機会損失、総SCMコストの改善を検証する設計にしています。
-同一のSKU・店舗ペアを比較単位とし、連続値KPIには対応のあるt検定、欠品有無にはMcNemar正確検定を用いて、p値に基づく効果検証も示しています。
+日本語では、ベースライン運用とAI補充推奨・店舗間移動を組み合わせた制約付き施策を比較し、欠品率、サービスレベル、販売機会損失、総SCMコストの差分を検証する設計にしています。
+同一のSKU・店舗ペアを比較単位とし、連続値KPIには対応のあるt検定、欠品有無にはMcNemar正確検定を用いています。ただし、p値は合成シミュレーション内の差分を評価するものであり、実運用での因果効果を証明するものではありません。
 
 Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
@@ -171,7 +172,7 @@ Detailed design: [docs/AB_TEST_DESIGN.md](docs/AB_TEST_DESIGN.md)
 
 The SCM Manager Agent is implemented with a deterministic local fallback first, and optional LLM integration second:
 
-- **Default behavior:** rule-based local responses from `src/agent.py`, using the current CSV tables for inventory policy, replenishment recommendations, transfers, and A/B evaluation summaries.
+- **Default behavior:** rule-based local responses from `src/agent.py`, using the current CSV tables for inventory policy, replenishment recommendations, transfers, and offline policy-evaluation summaries.
 - **Optional LLM path:** if `GEMINI_API_KEY` or `GOOGLE_API_KEY` is available, the app calls the Google GenAI SDK and supplies only the generated SCM context. The prompt instructs the model to use only supplied data and not invent numbers.
 - **Fallback behavior:** if no API key is configured, the SDK is missing, or the API call fails, the app returns a local rule-based answer instead of breaking the demo.
 - **Privacy note:** API keys are never committed to Git and must be provided through environment variables or local Streamlit secrets.
@@ -185,15 +186,15 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 - SKU-store stockout and overstock risk detection (SKU・店舗別の欠品/過剰在庫リスク検知)
 - Replenishment recommendation with priority levels (優先度付き補充推奨)
 - Inter-store inventory transfer recommendation (店舗間在庫移動推奨)
-- A/B-style offline policy evaluation with hypothesis testing (SCM KPI改善のオフライン効果検証)
+- Simulation-based offline policy evaluation with hypothesis testing (合成シミュレーションに基づく政策比較)
 - Streamlit dashboard with English, Japanese, and Korean UI labels (多言語ダッシュボード)
 - SCM Manager Agent chat (SCMマネージャー向けAgent)
 
 ## Dashboard Screenshots
 
-### A/B Impact Evaluation (A/B効果検証)
+### Offline Policy Evaluation (オフライン政策比較)
 
-![A/B KPI impact evaluation with synthetic-simulation caveat](assets/screenshots/dashboard-ab-kpi-impact-with-caveat.png)
+![Offline policy evaluation with synthetic-simulation caveat](assets/screenshots/dashboard-ab-kpi-impact-with-caveat.png)
 
 ### Logistics Improvement Priority (物流改善優先順位)
 
@@ -213,9 +214,9 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 
 ### SCM Manager Agent (SCMマネージャーAgent)
 
-![SCM Manager Agent answering an A/B impact and reorder-priority question](assets/screenshots/dashboard-ai-agent-impact-question.png)
+![SCM Manager Agent answering an offline policy and reorder-priority question](assets/screenshots/dashboard-ai-agent-impact-question.png)
 
-![Focused SCM chatbot interaction for A/B-based reorder prioritization](assets/screenshots/dashboard-ai-agent-chatbot-detail.png)
+![Focused SCM chatbot interaction for policy-based reorder prioritization](assets/screenshots/dashboard-ai-agent-chatbot-detail.png)
 
 ## SCM Logic
 
@@ -296,7 +297,7 @@ http://localhost:8502
 - Designed an end-to-end SCM decision workflow from demand signals to inventory actions. (需要シグナルから在庫アクションまでの一連の意思決定フローを設計)
 - Converted sales, inventory, supply, and forecast data into SKU-store-level replenishment recommendations. (販売・在庫・供給・予測データをSKU・店舗単位の補充推奨へ変換)
 - Implemented ROP and safety-stock logic to make replenishment decisions explainable and auditable. (発注点と安全在庫ロジックにより判断根拠を明確化)
-- Evaluated AI-assisted recommendations with an A/B-style paired policy evaluation, including p-value-based hypothesis testing. (AI推奨施策を対応のある効果検証とp値に基づく統計検定で評価)
+- Evaluated AI-assisted recommendations with simulation-based paired policy evaluation, including p-values, effect sizes, and confidence intervals. (AI推奨施策を合成シミュレーション上の対応のある政策比較として評価)
 - Identified logistics improvement priorities by city and product category. (都市・商品カテゴリ別に物流改善の優先順位を可視化)
 - Added an AI Agent layer that helps SCM managers review inventory risk and action priorities in natural language. (自然言語で在庫リスクと対応優先度を確認できるAgent層を追加)
 - Built the system to run with local rule-based logic by default for stable dashboard demonstrations. (ローカルルールベースで安定して動作する構成)
@@ -305,7 +306,7 @@ http://localhost:8502
 
 本プロジェクトは、ファッション小売SCMにおける在庫切れと過剰在庫の削減をテーマにしたデータ分析・意思決定支援システムです。需要予測、発注点、安全在庫、補充推奨、店舗間在庫移動を一つの業務フローとして設計し、SKU・店舗単位で優先対応すべき在庫リスクを可視化します。
 
-さらに、従来のROP在庫運用をControl、AI補充推奨と店舗間移動をTreatmentとして比較するオフライン政策評価を追加し、SCM KPI改善、p値に基づく仮説検定、物流改善優先順位まで確認できる構成にしています。AIエージェント機能では、ダッシュボード上のSCMデータをもとに、補充優先度、在庫リスク、判断ロジックを自然言語で確認できます。
+さらに、ベースライン在庫運用と制約付きAI支援施策を比較するオフライン政策評価を追加し、SCM KPI差分、p値に基づく仮説検定、物流改善優先順位まで確認できる構成にしています。AIエージェント機能では、ダッシュボード上のSCMデータをもとに、補充優先度、在庫リスク、判断ロジックを自然言語で確認できます。
 
 ## Security Notes
 

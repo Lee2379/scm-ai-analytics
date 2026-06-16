@@ -108,17 +108,17 @@ def build_scm_context(tables: dict[str, pd.DataFrame]) -> str:
 
     if "ab_summary" in tables:
         ab_summary = tables["ab_summary"]
-        control = ab_summary[ab_summary["group"].str.contains("Control")].iloc[0]
-        treatment = ab_summary[ab_summary["group"].str.contains("Treatment")].iloc[0]
+        control = ab_summary[ab_summary["group"].str.contains("Baseline")].iloc[0]
+        treatment = ab_summary[ab_summary["group"].str.contains("Candidate")].iloc[0]
         lines.extend(
             [
                 "",
-                "A/B TEST SIMULATION IMPACT",
-                f"- Control stockout rate: {control.stockout_rate:.1%}",
-                f"- Treatment stockout rate: {treatment.stockout_rate:.1%}",
-                f"- Control service level: {control.service_level:.1%}",
-                f"- Treatment service level: {treatment.service_level:.1%}",
-                f"- Total SCM cost reduction: {treatment.cost_reduction_vs_control_pct:.1%}",
+                "OFFLINE POLICY EVALUATION",
+                f"- Baseline stockout rate: {control.stockout_rate:.1%}",
+                f"- Candidate-policy stockout rate: {treatment.stockout_rate:.1%}",
+                f"- Baseline service level: {control.service_level:.1%}",
+                f"- Candidate-policy service level: {treatment.service_level:.1%}",
+                f"- Total SCM cost proxy reduction: {treatment.cost_reduction_vs_control_pct:.1%}",
             ]
         )
 
@@ -131,16 +131,16 @@ def build_scm_context(tables: dict[str, pd.DataFrame]) -> str:
             aggfunc="sum",
         ).reset_index()
         required = {
-            "Control: baseline ROP policy",
-            "Treatment: AI recommendation policy",
+            "Baseline: planner policy",
+            "Candidate: constrained AI-assisted policy",
         }
         if required.issubset(pivot.columns):
             pivot["cost_reduction_jpy"] = (
-                pivot["Control: baseline ROP policy"]
-                - pivot["Treatment: AI recommendation policy"]
+                pivot["Baseline: planner policy"]
+                - pivot["Candidate: constrained AI-assisted policy"]
             )
             top_driver = pivot.sort_values("cost_reduction_jpy", ascending=False).head(3)
-            lines.extend(["", "TOP A/B IMPROVEMENT DRIVERS"])
+            lines.extend(["", "TOP OFFLINE POLICY IMPROVEMENT DRIVERS"])
             for _, row in top_driver.iterrows():
                 lines.append(
                     f"- {row.city} / {row.category}: "
@@ -169,17 +169,26 @@ def local_agent_reply(question: str, tables: dict[str, pd.DataFrame], lang: str 
         "\ubc1c\uc8fc",
         "\uc6b0\uc120",
     ]
+    policy_terms = ["a/b", "ab test", "policy", "impact", "effect", "improve", "\u52b9\u679c", "\u6539\u5584"]
+    if any(k in q for k in reorder_terms) and any(k in q for k in policy_terms):
+        return _reply(
+            _format_reorder_answer(tables, lang)
+            + "\n\n"
+            + _section(context, "OFFLINE POLICY EVALUATION")
+            + "\n\n"
+            + "Statistical note: these results are synthetic paired policy-comparison outputs, not production causal impact."
+        )
     if any(k in q for k in reorder_terms):
         return _format_reorder_answer(tables, lang)
     if any(k in q for k in ["safety", "safety stock"]):
         return _reply(_section(context, "HIGHEST SAFETY STOCK REQUIREMENTS"))
     if any(k in q for k in ["transfer", "store"]):
         return _reply(_section(context, "STORE TRANSFER RECOMMENDATIONS"))
-    if any(k in q for k in ["a/b", "ab test", "impact", "effect", "improve", "\u52b9\u679c", "\u6539\u5584"]):
+    if any(k in q for k in policy_terms):
         return _reply(
-            _section(context, "A/B TEST SIMULATION IMPACT")
+            _section(context, "OFFLINE POLICY EVALUATION")
             + "\n\n"
-            + _section(context, "TOP A/B IMPROVEMENT DRIVERS")
+            + _section(context, "TOP OFFLINE POLICY IMPROVEMENT DRIVERS")
         )
     if any(k in q for k in ["risk", "stockout"]):
         return _reply(_section(context, "HIGHEST STOCKOUT RISKS"))
@@ -205,8 +214,8 @@ def gemini_reply_if_configured(question: str, context: str, lang: str = "ja") ->
         "When answering reorder-priority questions, do NOT dump the raw data. "
         "Structure the answer as: 1) one-sentence conclusion, 2) top 3 priority SKU-store actions, "
         "3) decision logic, 4) recommended next action. "
-        "When answering A/B test or impact questions, explain stockout rate, service level, total SCM cost, "
-        "and the top city/category improvement drivers. "
+        "When answering offline policy evaluation or impact questions, explain that the results are synthetic simulated policy comparisons, "
+        "then cover stockout rate, service level, total SCM cost proxy, and the top city/category improvement drivers. "
         "Use short bullets and explain stock, ROP, forecast demand, and order quantity in plain language. "
         "Keep answers concise, executive-friendly, readable, and specific."
     )

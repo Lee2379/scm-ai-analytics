@@ -10,6 +10,12 @@ from scipy import stats
 TRANSFER_COST_PER_UNIT = 120
 ORDER_HANDLING_COST_PER_UNIT = 40
 HOLDING_COST_RATE_28D = 0.015
+CONTROL_FORECAST_GAP_COVERAGE = 0.80
+TREATMENT_REMAINING_GAP_COVERAGE = 0.20
+TREATMENT_TRANSFER_REALIZATION = 0.25
+TREATMENT_DEMAND_CAP = 1.00
+BASELINE_LABEL = "Baseline: planner policy"
+CANDIDATE_LABEL = "Candidate: constrained AI-assisted policy"
 
 
 def load_inputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
@@ -96,6 +102,7 @@ def _paired_t_test(control: pd.Series, treatment: pd.Series, direction: str) -> 
         ci_low = mean_improvement
         ci_high = mean_improvement
         t_stat = math.inf if mean_improvement > 0 else 0.0
+        effect_size = math.inf if mean_improvement > 0 else 0.0
     else:
         standard_error = std_improvement / math.sqrt(sample_size)
         t_stat = mean_improvement / standard_error
@@ -103,6 +110,7 @@ def _paired_t_test(control: pd.Series, treatment: pd.Series, direction: str) -> 
         t_crit = float(stats.t.ppf(0.975, df=sample_size - 1))
         ci_low = mean_improvement - t_crit * standard_error
         ci_high = mean_improvement + t_crit * standard_error
+        effect_size = mean_improvement / std_improvement
 
     return {
         "test": "Paired t-test",
@@ -110,6 +118,7 @@ def _paired_t_test(control: pd.Series, treatment: pd.Series, direction: str) -> 
         "mean_improvement": round(mean_improvement, 4),
         "confidence_interval_95": f"[{ci_low:.4f}, {ci_high:.4f}]",
         "test_statistic": round(float(t_stat), 4) if math.isfinite(t_stat) else "inf",
+        "effect_size": f"Cohen's dz={effect_size:.3f}" if math.isfinite(effect_size) else "Cohen's dz=inf",
         "p_value": p_value,
     }
 
@@ -128,6 +137,7 @@ def _mcnemar_exact_test(control: pd.Series, treatment: pd.Series) -> dict[str, f
         "mean_improvement": round(float(control_bool.mean() - treatment_bool.mean()), 4),
         "confidence_interval_95": "Not reported for exact McNemar test",
         "test_statistic": f"improved={improved}, worsened={worsened}",
+        "effect_size": f"risk difference={control_bool.mean() - treatment_bool.mean():.3f}",
         "p_value": p_value,
     }
 
@@ -148,46 +158,46 @@ def _build_statistical_tests(results: pd.DataFrame) -> pd.DataFrame:
         .dropna()
     )
 
-    control_label = "Control: baseline ROP policy"
-    treatment_label = "Treatment: AI recommendation policy"
+    control_label = BASELINE_LABEL
+    treatment_label = CANDIDATE_LABEL
     test_specs = [
         {
             "metric": "Total SCM cost proxy",
-            "null_hypothesis": "The AI treatment does not reduce mean total SCM cost versus the baseline policy.",
-            "alternative_hypothesis": "The AI treatment reduces mean total SCM cost versus the baseline policy.",
+            "null_hypothesis": "The AI-assisted candidate policy does not reduce mean total SCM cost versus the baseline policy.",
+            "alternative_hypothesis": "The AI-assisted candidate policy reduces mean total SCM cost versus the baseline policy.",
             "method": _paired_t_test(
                 paired[("total_scm_cost_jpy", control_label)],
                 paired[("total_scm_cost_jpy", treatment_label)],
                 direction="decrease",
             ),
-            "business_interpretation": "Tests whether AI recommendations reduce overall SCM cost at the SKU-store level.",
+            "business_interpretation": "Tests whether the candidate policy reduces simulated SCM cost at the SKU-store level.",
         },
         {
             "metric": "Lost sales proxy",
-            "null_hypothesis": "The AI treatment does not reduce mean lost-sales proxy versus the baseline policy.",
-            "alternative_hypothesis": "The AI treatment reduces mean lost-sales proxy versus the baseline policy.",
+            "null_hypothesis": "The AI-assisted candidate policy does not reduce mean lost-sales proxy versus the baseline policy.",
+            "alternative_hypothesis": "The AI-assisted candidate policy reduces mean lost-sales proxy versus the baseline policy.",
             "method": _paired_t_test(
                 paired[("lost_sales_proxy_jpy", control_label)],
                 paired[("lost_sales_proxy_jpy", treatment_label)],
                 direction="decrease",
             ),
-            "business_interpretation": "Tests whether AI recommendations reduce forecast-period lost-sales exposure.",
+            "business_interpretation": "Tests whether the candidate policy reduces forecast-period lost-sales exposure in simulation.",
         },
         {
             "metric": "Service level",
-            "null_hypothesis": "The AI treatment does not increase mean service level versus the baseline policy.",
-            "alternative_hypothesis": "The AI treatment increases mean service level versus the baseline policy.",
+            "null_hypothesis": "The AI-assisted candidate policy does not increase mean service level versus the baseline policy.",
+            "alternative_hypothesis": "The AI-assisted candidate policy increases mean service level versus the baseline policy.",
             "method": _paired_t_test(
                 paired[("service_level", control_label)],
                 paired[("service_level", treatment_label)],
                 direction="increase",
             ),
-            "business_interpretation": "Tests whether AI recommendations improve demand fulfillment at the SKU-store level.",
+            "business_interpretation": "Tests whether the candidate policy improves simulated demand fulfillment at the SKU-store level.",
         },
         {
             "metric": "Stockout flag",
             "null_hypothesis": "The probability of stockout improvement is not greater than the probability of stockout worsening.",
-            "alternative_hypothesis": "The AI treatment reduces stockout occurrence versus the baseline policy.",
+            "alternative_hypothesis": "The AI-assisted candidate policy reduces stockout occurrence versus the baseline policy.",
             "method": _mcnemar_exact_test(
                 paired[("stockout_flag", control_label)],
                 paired[("stockout_flag", treatment_label)],
@@ -211,6 +221,7 @@ def _build_statistical_tests(results: pd.DataFrame) -> pd.DataFrame:
                 "mean_improvement": method["mean_improvement"],
                 "confidence_interval_95": method["confidence_interval_95"],
                 "test_statistic": method["test_statistic"],
+                "effect_size": method["effect_size"],
                 "p_value": float(f"{p_value:.12g}"),
                 "p_value_display": p_value_display,
                 "significance_0_05": p_value < 0.05,
@@ -247,10 +258,29 @@ def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     base["recommended_order_qty"] = base["recommended_order_qty"].fillna(0)
     base["priority"] = base["priority"].fillna("Monitor")
     base["risk_score"] = base["risk_score"].fillna(0)
-    base["control_order_qty"] = (base["rop"] - base["stock_on_hand"]).clip(lower=0).round()
+    base["rop_gap_order_qty"] = (base["rop"] - base["stock_on_hand"]).clip(lower=0)
+    base["forecast_gap_after_rop"] = (
+        base["forecast_28d"] - base["stock_on_hand"] - base["rop_gap_order_qty"]
+    ).clip(lower=0)
+    base["control_order_qty"] = (
+        base["rop_gap_order_qty"] + CONTROL_FORECAST_GAP_COVERAGE * base["forecast_gap_after_rop"]
+    ).round()
 
-    control = _evaluate_policy(base, "Control: baseline ROP policy", "control_order_qty", transfer_enabled=False)
-    treatment = _evaluate_policy(base, "Treatment: AI recommendation policy", "recommended_order_qty", transfer_enabled=True)
+    base["forecast_gap_after_control"] = (
+        base["forecast_28d"] - base["stock_on_hand"] - base["control_order_qty"]
+    ).clip(lower=0)
+    base["treatment_order_qty"] = (
+        base["control_order_qty"] + TREATMENT_REMAINING_GAP_COVERAGE * base["forecast_gap_after_control"]
+    ).round()
+    base["treatment_order_qty"] = base["treatment_order_qty"].clip(upper=(base["forecast_28d"] * TREATMENT_DEMAND_CAP).round())
+    base["treatment_inbound_transfer_qty"] = (base["inbound_transfer_qty"].fillna(0) * TREATMENT_TRANSFER_REALIZATION).round()
+    base["treatment_outbound_transfer_qty"] = (base["outbound_transfer_qty"].fillna(0) * TREATMENT_TRANSFER_REALIZATION).round()
+
+    control = _evaluate_policy(base, BASELINE_LABEL, "control_order_qty", transfer_enabled=False)
+    treatment_base = base.copy()
+    treatment_base["inbound_transfer_qty"] = treatment_base["treatment_inbound_transfer_qty"]
+    treatment_base["outbound_transfer_qty"] = treatment_base["treatment_outbound_transfer_qty"]
+    treatment = _evaluate_policy(treatment_base, CANDIDATE_LABEL, "treatment_order_qty", transfer_enabled=True)
     results = pd.concat([control, treatment], ignore_index=True)
 
     metric_summary = (
@@ -271,10 +301,10 @@ def build_ab_test_outputs(data_dir: str | Path) -> dict[str, pd.DataFrame]:
     )
 
     control_cost = metric_summary.loc[
-        metric_summary["group"] == "Control: baseline ROP policy", "total_scm_cost_jpy"
+        metric_summary["group"] == BASELINE_LABEL, "total_scm_cost_jpy"
     ].iloc[0]
     treatment_cost = metric_summary.loc[
-        metric_summary["group"] == "Treatment: AI recommendation policy", "total_scm_cost_jpy"
+        metric_summary["group"] == CANDIDATE_LABEL, "total_scm_cost_jpy"
     ].iloc[0]
     metric_summary["cost_delta_vs_control_jpy"] = metric_summary["total_scm_cost_jpy"] - control_cost
     metric_summary["cost_reduction_vs_control_pct"] = (

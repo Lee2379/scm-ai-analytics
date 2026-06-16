@@ -466,7 +466,7 @@ tab_overview, tab_forecast, tab_inventory, tab_transfer, tab_ab, tab_agent = st.
         tr(lang, "Demand Forecast", JP["forecast"], "수요예측"),
         tr(lang, "ROP & Safety Stock", JP["rop"], "ROP 및 안전재고"),
         tr(lang, "Store Transfer", JP["transfer"], "매장 간 이동"),
-        tr(lang, "A/B Impact", "A/B効果検証", "A/B Impact"),
+        tr(lang, "Policy Eval", "政策比較", "Policy Eval"),
         tr(lang, "AI Agent", JP["agent"], "AI 에이전트"),
     ]
 )
@@ -579,22 +579,22 @@ with tab_transfer:
         st.dataframe(transfers, use_container_width=True, hide_index=True)
 
 with tab_ab:
-    st.subheader("A/B Test Simulation: SCM KPI Impact")
+    st.subheader("Offline Policy Evaluation: SCM KPI Comparison")
     st.caption(
-        "Control = baseline ROP policy. Treatment = AI replenishment recommendation plus store-transfer policy. "
-        "This is a portfolio simulation based on the repository's SCM demo data, not a randomized production A/B test."
+        "Baseline = planner-style replenishment policy. Candidate = constrained AI-assisted replenishment plus limited store-transfer policy. "
+        "This is a synthetic offline policy comparison, not a randomized production experiment."
     )
     st.info(
-        "Interpretation note: the large KPI deltas are controlled synthetic-scenario results, not production savings claims. "
-        "A real rollout would require stronger baselines, pilot stores, operational constraints, and sensitivity checks."
+        "Interpretation note: p-values only evaluate paired differences under this synthetic simulation. "
+        "They do not prove real-world causal impact; production rollout would require backtesting, pilot stores, constraints, and sensitivity checks."
     )
     st.caption(
-        "日本語: 従来のROP在庫運用と、AI補充推奨・店舗間移動を組み合わせた施策を比較する、"
-        "公開デモデータに基づくオフライン政策評価シミュレーションです。"
+        "日本語: ベースライン在庫運用と、制約付きAI補充推奨・店舗間移動施策を比較する、"
+        "合成デモデータに基づくオフライン政策評価シミュレーションです。"
     )
 
-    control = ab_summary[ab_summary["group"].str.contains("Control")].iloc[0]
-    treatment = ab_summary[ab_summary["group"].str.contains("Treatment")].iloc[0]
+    control = ab_summary[ab_summary["group"].str.contains("Baseline")].iloc[0]
+    treatment = ab_summary[ab_summary["group"].str.contains("Candidate")].iloc[0]
     cost_reduction_pct = float(treatment["cost_reduction_vs_control_pct"]) * 100
     cost_reduction_jpy = float(control["total_scm_cost_jpy"] - treatment["total_scm_cost_jpy"])
     stockout_reduction_pp = float(control["stockout_rate"] - treatment["stockout_rate"]) * 100
@@ -602,7 +602,7 @@ with tab_ab:
     lost_sales_reduction_jpy = float(control["lost_sales_proxy_jpy"] - treatment["lost_sales_proxy_jpy"])
 
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Total SCM cost reduction", f"{cost_reduction_pct:.1f}%", f"-JPY {cost_reduction_jpy:,.0f}")
+    kpi1.metric("Total SCM cost proxy reduction", f"{cost_reduction_pct:.1f}%", f"-JPY {cost_reduction_jpy:,.0f}")
     kpi2.metric("Stockout-rate reduction", f"{stockout_reduction_pp:.1f} pp")
     kpi3.metric("Service-level uplift", f"{service_level_uplift_pp:.1f} pp")
     kpi4.metric("Lost-sales reduction", f"JPY {lost_sales_reduction_jpy:,.0f}")
@@ -613,7 +613,7 @@ with tab_ab:
         y="total_scm_cost_jpy",
         color="group",
         color_discrete_sequence=[INK_BLACK, RETAIL_RED],
-        title="Control vs Treatment: Total SCM Cost",
+        title="Baseline vs Candidate: Total SCM Cost Proxy",
     )
     cost_fig.update_layout(showlegend=False, height=390, paper_bgcolor="white", plot_bgcolor="white")
 
@@ -643,7 +643,7 @@ with tab_ab:
     st.subheader("Hypothesis Test and p-value")
     st.caption(
         "Methodology: paired t-test for continuous KPI deltas and McNemar exact test for paired stockout outcomes. "
-        "H0 means the AI treatment does not improve the KPI versus the baseline policy."
+        "H0 means the AI-assisted candidate policy does not improve the KPI versus the baseline policy."
     )
     st.caption(
         "日本語: SKU・店舗ペアを同一単位として比較し、連続値KPIは対応のあるt検定、"
@@ -658,6 +658,7 @@ with tab_ab:
                 "sample_size",
                 "mean_improvement",
                 "confidence_interval_95",
+                "effect_size",
                 "test_statistic",
                 "p_value_display",
                 "significance_0_05",
@@ -675,11 +676,11 @@ with tab_ab:
         aggfunc="sum",
     ).reset_index()
     segment_cost["cost_reduction_jpy"] = (
-        segment_cost["Control: baseline ROP policy"]
-        - segment_cost["Treatment: AI recommendation policy"]
+        segment_cost["Baseline: planner policy"]
+        - segment_cost["Candidate: constrained AI-assisted policy"]
     )
     segment_cost["cost_reduction_pct"] = (
-        segment_cost["cost_reduction_jpy"] / segment_cost["Control: baseline ROP policy"].replace(0, pd.NA)
+        segment_cost["cost_reduction_jpy"] / segment_cost["Baseline: planner policy"].replace(0, pd.NA)
     )
     segment_cost = segment_cost.sort_values("cost_reduction_jpy", ascending=False)
 
@@ -702,7 +703,7 @@ with tab_ab:
         hide_index=True,
     )
 
-    st.subheader("A/B Test Detail Table")
+    st.subheader("Offline Policy Evaluation Detail Table")
     st.dataframe(
         ab_results[
             [
