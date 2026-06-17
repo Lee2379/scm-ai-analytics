@@ -29,7 +29,7 @@ LANG_OPTIONS = {
 }
 
 JP = {
-    "portfolio": "AI SCM\u30c7\u30fc\u30bf\u5206\u6790\u30b7\u30b9\u30c6\u30e0",
+    "project": "AI SCM\u30c7\u30fc\u30bf\u5206\u6790\u30b7\u30b9\u30c6\u30e0",
     "hero_title": "AI SCM Data Analysis Project",
     "summary": "\u9700\u8981\u4e88\u6e2c\u3001SKU\u30fb\u5e97\u8217\u5225\u767a\u6ce8\u70b9\u3001\u5b89\u5168\u5728\u5eab\u3001\u88dc\u5145\u63a8\u85a6\u3001\u5e97\u8217\u9593\u5728\u5eab\u79fb\u52d5\u3092\u7d71\u5408\u3057\u305fSCM\u610f\u601d\u6c7a\u5b9a\u652f\u63f4\u30b7\u30b9\u30c6\u30e0\u3002",
     "chatbot": "\u30c1\u30e3\u30c3\u30c8\u30dc\u30c3\u30c8",
@@ -198,7 +198,7 @@ st.markdown(
       line-height: 1.05;
       font-weight: 900;
     }
-    .portfolio-name {
+    .project-name {
       margin: 0 0 12px;
       color: #111111;
       font-size: 20px;
@@ -361,7 +361,7 @@ with lang_ko_col:
         st.session_state["site_lang"] = "ko"
 
 lang = st.session_state["site_lang"]
-portfolio_label = tr(lang, "AI SCM Data Analysis Project", JP["portfolio"], "AI SCM 데이터 분석 프로젝트")
+project_label = tr(lang, "AI SCM Data Analysis Project", JP["project"], "AI SCM 데이터 분석 프로젝트")
 hero_title = tr(
     lang,
     "AI SCM Data Analysis Project",
@@ -411,8 +411,8 @@ with top_left:
     st.markdown(
         f"""
         <div class="hero">
-          <div class="hero-kicker">{portfolio_label}</div>
-          <div class="portfolio-name">SCM Decision Support Dashboard</div>
+          <div class="hero-kicker">{project_label}</div>
+          <div class="project-name">SCM Decision Support Dashboard</div>
           <h1>{hero_title}</h1>
           <p>{hero_summary}</p>
         </div>

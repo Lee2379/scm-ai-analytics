@@ -2,15 +2,15 @@
 
 ## Purpose
 
-This document explains the simulation-based offline policy evaluation added to the SCM analytics portfolio. The goal is to show how AI-driven replenishment and store-transfer recommendations can be evaluated against a baseline inventory policy using business KPIs, not only dashboard visuals.
+This document explains the simulation-based offline policy evaluation added to the SCM analytics project. The goal is to show how AI-driven replenishment and store-transfer recommendations can be evaluated against a baseline inventory policy using business KPIs, not only dashboard visuals.
 
-This is a portfolio-grade simulation based on reproducible demo data. It is not presented as a live production experiment or a randomized field experiment.
+This is a reproducible simulation based on reproducible demo data. It is not presented as a live production experiment or a randomized field experiment.
 
 ## Japanese Summary
 
 本ドキュメントは、AIによる補充推奨・店舗間在庫移動推奨が、従来の在庫運用方針と比較してSCM KPIにどのような差分を生むかを検証する、合成シミュレーションに基づくオフライン政策評価の設計を説明します。
 
-実運用の本番実験ではなく、公開用デモデータに基づくポートフォリオ向けのオフライン政策評価フレームワークです。効果を単なるダッシュボード上の差分として見せるだけでなく、同一のSKU・店舗ペアを比較単位として、p値、効果量、95%信頼区間を含む統計的な検定も行います。
+実運用の本番実験ではなく、公開用デモデータに基づくオフライン政策評価フレームワークです。効果を単なるダッシュボード上の差分として見せるだけでなく、同一のSKU・店舗ペアを比較単位として、p値、効果量、95%信頼区間を含む統計的な検定も行います。
 
 ## Experiment Design
 
@@ -130,6 +130,6 @@ For a real company setting, this framework would be used before rollout to answe
 - How much transfer cost is acceptable relative to lost-sales reduction?
 - Which KPI should be used as the primary success metric?
 
-## Portfolio Relevance
+## Professional Relevance
 
 This addition strengthens the project from a dashboard demo into a business-oriented policy-evaluation case study. It shows the ability to connect SCM analytics, AI recommendations, KPI design, and policy evaluation in a way that is relevant for Japanese retail, manufacturing, logistics, trading-company, and DX roles.
