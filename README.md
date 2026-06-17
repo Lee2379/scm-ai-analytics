@@ -6,19 +6,9 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 
 ## 日本語概要
 
-本プロジェクトは、ファッション小売・流通業におけるSCM意思決定を想定した、AI・データ分析・業務ロジック統合型のダッシュボードです。欠品、過剰在庫、補充優先度、店舗間在庫移動といった現場課題を、需要予測、発注点、安全在庫、補充推奨、Streamlit可視化、SCM Manager Agentによる自然言語確認まで含めた一つの業務フローとして実装しています。
-
-| 観点 | 内容 |
-| --- | --- |
-| ビジネス課題 | 欠品・過剰在庫・補充優先度・店舗間移動判断の効率化 |
-| データ設計 | 公開小売データを参考にしたSKU・店舗・在庫・供給・需要予測テーブル |
-| 分析ロジック | 安全在庫、発注点、在庫リスク、補充推奨、店舗間移動推奨 |
-| アプリ実装 | Streamlit dashboardでリスク監視、予測、推奨アクションを可視化 |
-| AI Agent | SCM Manager向けに、在庫状況や推奨理由を自然言語で確認可能 |
-| 効果検証 | 合成シミュレーション上のオフライン政策比較で、AI推奨施策のSCM KPI差分とp値を確認 |
-| 示せる力 | 業務課題をデータ構造、分析ロジック、AI支援UIへ落とし込む力 |
-
-小売、製造、物流、商社、DX部門などで想定されるSCM課題に対し、データ分析を単なる可視化で終わらせず、業務判断に使える意思決定支援システムとして設計しています。機密情報、顧客情報、実企業の内部データは含みません。
+本プロジェクトは、ファッション小売・流通業におけるSCM意思決定を想定したAI・データ分析ダッシュボードです。  
+需要予測、SKU・店舗別の発注点、安全在庫、補充推奨、店舗間在庫移動、オフライン政策評価、SCM Manager Agentを一つの業務フローとして統合しています。  
+公開データを参考にした合成SCMデータのみを使用しており、機密情報、顧客情報、実企業の内部データは含みません。
 
 ## Project Scope
 
@@ -27,12 +17,6 @@ This project is a Streamlit-based SCM decision-support dashboard for global fash
 - Decision level: SKU-store-level risk monitoring and action prioritization (SKU・店舗単位のリスク監視と優先順位付け)
 - Policy evaluation: simulation-based offline policy evaluation comparing a baseline planner policy vs a constrained AI-assisted policy (合成シミュレーションに基づくオフライン政策比較)
 - Data scope: public-data-inspired synthetic SCM data only. No private company data is included. (公開データを参考にした合成SCMデータのみを使用)
-
-## Japanese Summary
-
-本プロジェクトは、グローバルファッション小売業のSCM業務を想定したデータ分析・意思決定支援ダッシュボードです。需要予測、SKU・店舗別の発注点、安全在庫、補充推奨、店舗間在庫移動、AIエージェントによる判断支援を一つの業務フローとして統合しています。
-
-在庫切れ・過剰在庫・補充優先度というSCM上の課題に対し、データ処理、在庫ロジック、可視化、自然言語による確認機能を組み合わせて、実務に近い意思決定プロセスを再現します。
 
 ## Data Source and Dataset Notes
 
