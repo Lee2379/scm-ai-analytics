@@ -180,6 +180,12 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 
 ## Dashboard Screenshots
 
+### Analytical Workspace (分析ワークスペース)
+
+![Professional SCM analytical workspace with navigation, filters, KPI strip, risk diagnostics, action table, and decision copilot](assets/screenshots/dashboard-analytical-workspace-v2.png)
+
+The current interface is structured as a senior data-science operating surface: global filters and model freshness at the top, decision KPIs and diagnostic charts in the main canvas, action-level detail below, and a persistent grounded SCM copilot on the right.
+
 ### Offline Policy Evaluation (オフライン政策比較)
 
 ![Offline policy evaluation dashboard with KPI cards and conservative simulation note](assets/screenshots/dashboard-policy-evaluation-app.png)
@@ -269,14 +275,18 @@ python -m pip install -r requirements.txt
 ## Run Dashboard
 
 ```bat
-streamlit run app.py --server.port 8502
+streamlit run app.py --server.port 8501
 ```
 
 Then open:
 
 ```text
-http://localhost:8502
+http://localhost:8501
 ```
+
+## Deployment
+
+The repository includes a pinned Python runtime, bounded dependency versions, Streamlit theme/server configuration, and a secrets template. See [DEPLOYMENT.md](DEPLOYMENT.md) for the Streamlit Community Cloud release path and smoke-test checklist.
 
 ## Project Value
 
