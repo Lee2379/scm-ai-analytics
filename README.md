@@ -182,7 +182,7 @@ The SCM Manager Agent is implemented with a deterministic local fallback first, 
 
 ### Analytical Workspace (分析ワークスペース)
 
-![Professional SCM analytical workspace with navigation, filters, KPI strip, risk diagnostics, action table, and decision copilot](assets/screenshots/dashboard-analytical-workspace-v2.png)
+![Professional SCM analytical workspace with navigation, filters, KPI strip, risk diagnostics, action table, and decision copilot](assets/screenshots/dashboard-analytical-workspace-v3-sharp.png)
 
 The current interface is structured as a senior data-science operating surface: global filters and model freshness at the top, decision KPIs and diagnostic charts in the main canvas, action-level detail below, and a persistent grounded SCM copilot on the right.
 
