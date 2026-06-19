@@ -169,27 +169,43 @@ def local_agent_reply(question: str, tables: dict[str, pd.DataFrame], lang: str 
         "\ubc1c\uc8fc",
         "\uc6b0\uc120",
     ]
-    policy_terms = ["a/b", "ab test", "policy", "impact", "effect", "improve", "\u52b9\u679c", "\u6539\u5584"]
-    if any(k in q for k in reorder_terms) and any(k in q for k in policy_terms):
-        return _reply(
-            _format_reorder_answer(tables, lang)
-            + "\n\n"
-            + _section(context, "OFFLINE POLICY EVALUATION")
-            + "\n\n"
-            + "Statistical note: these results are synthetic paired policy-comparison outputs, not production causal impact."
-        )
+    policy_terms = [
+        "a/b",
+        "ab test",
+        "policy",
+        "policies",
+        "baseline",
+        "candidate",
+        "compare",
+        "comparison",
+        "impact",
+        "effect",
+        "improve",
+        "service level",
+        "scm cost",
+        "\u30dd\u30ea\u30b7\u30fc",
+        "\u65b9\u91dd",
+        "\u30d9\u30fc\u30b9\u30e9\u30a4\u30f3",
+        "\u6bd4\u8f03",
+        "\u52b9\u679c",
+        "\u6539\u5584",
+        "\uc815\ucc45",
+        "\ubca0\uc774\uc2a4\ub77c\uc778",
+        "\ube44\uad50",
+        "\ud6a8\uacfc",
+        "\uac1c\uc120",
+    ]
+    # Policy questions often contain words such as "replenishment" or "order".
+    # Classify them before reorder questions so a comparison request cannot fall
+    # through to the operational reorder response.
+    if any(k in q for k in policy_terms):
+        return _format_policy_answer(tables, lang)
+    if any(k in q for k in ["safety", "safety stock", "\u5b89\u5168\u5728\u5eab", "\uc548\uc804\uc7ac\uace0"]):
+        return _reply(_section(context, "HIGHEST SAFETY STOCK REQUIREMENTS"))
+    if any(k in q for k in ["transfer", "store", "\u5e97\u8217\u9593\u79fb\u52d5", "\u5728\u5eab\u79fb\u52d5", "\ub9e4\uc7a5 \uac04 \uc774\ub3d9", "\uc7ac\uace0 \uc774\ub3d9"]):
+        return _reply(_section(context, "STORE TRANSFER RECOMMENDATIONS"))
     if any(k in q for k in reorder_terms):
         return _format_reorder_answer(tables, lang)
-    if any(k in q for k in ["safety", "safety stock"]):
-        return _reply(_section(context, "HIGHEST SAFETY STOCK REQUIREMENTS"))
-    if any(k in q for k in ["transfer", "store"]):
-        return _reply(_section(context, "STORE TRANSFER RECOMMENDATIONS"))
-    if any(k in q for k in policy_terms):
-        return _reply(
-            _section(context, "OFFLINE POLICY EVALUATION")
-            + "\n\n"
-            + _section(context, "TOP OFFLINE POLICY IMPROVEMENT DRIVERS")
-        )
     if any(k in q for k in ["risk", "stockout"]):
         return _reply(_section(context, "HIGHEST STOCKOUT RISKS"))
     return _reply(_section(context, "SCM LIVE DATA SNAPSHOT"))
@@ -257,6 +273,103 @@ def _section(context: str, start_title: str) -> str:
 
 def _reply(text: str) -> str:
     return text
+
+
+def _format_policy_answer(tables: dict[str, pd.DataFrame], lang: str) -> str:
+    summary = tables.get("policy_summary")
+    if summary is None or summary.empty:
+        return _reply("Policy evaluation data is not available.")
+
+    baseline = summary[summary["group"].str.contains("Baseline")].iloc[0]
+    candidate = summary[summary["group"].str.contains("Candidate")].iloc[0]
+    stockout_delta_pp = (candidate.stockout_rate - baseline.stockout_rate) * 100
+    service_delta_pp = (candidate.service_level - baseline.service_level) * 100
+    cost_reduction = baseline.total_scm_cost_jpy - candidate.total_scm_cost_jpy
+    cost_reduction_pct = cost_reduction / baseline.total_scm_cost_jpy
+
+    drivers: list[tuple[str, str, float]] = []
+    segments = tables.get("policy_segments")
+    if segments is not None and not segments.empty:
+        pivot = segments.pivot_table(
+            index=["city", "category"],
+            columns="group",
+            values="total_scm_cost_jpy",
+            aggfunc="sum",
+        ).reset_index()
+        baseline_col = "Baseline: planner policy"
+        candidate_col = "Candidate: constrained AI-assisted policy"
+        if {baseline_col, candidate_col}.issubset(pivot.columns):
+            pivot["cost_reduction_jpy"] = pivot[baseline_col] - pivot[candidate_col]
+            for _, row in pivot.sort_values("cost_reduction_jpy", ascending=False).head(3).iterrows():
+                drivers.append((str(row.city), str(row.category), float(row.cost_reduction_jpy)))
+
+    if lang == "ja":
+        lines = [
+            "結論：AI支援候補ポリシーは、ベースラインに対して欠品率と総SCMコストを低減し、サービスレベルを改善しました。",
+            "",
+            "主要KPI比較",
+            f"- 欠品率：{baseline.stockout_rate:.1%} → {candidate.stockout_rate:.1%}（{stockout_delta_pp:+.1f}ポイント）",
+            f"- サービスレベル：{baseline.service_level:.1%} → {candidate.service_level:.1%}（{service_delta_pp:+.1f}ポイント）",
+            f"- 総SCMコスト：¥{baseline.total_scm_cost_jpy:,.0f} → ¥{candidate.total_scm_cost_jpy:,.0f}（{cost_reduction_pct:.1%}削減、¥{cost_reduction:,.0f}）",
+        ]
+        if drivers:
+            lines.extend(["", "主な改善ドライバー"])
+            lines.extend(f"- {city} / {category}：推定コスト削減 ¥{value:,.0f}" for city, category, value in drivers)
+        lines.extend(
+            [
+                "",
+                "解釈上の注意",
+                f"- 対象は{int(baseline.experimental_units)}件のSKU・店舗ペアによる合成オフラインシミュレーションです。",
+                "- ランダム化された本番実験ではないため、因果効果としては解釈できません。",
+                "- 発注・保管・欠品・店舗間移動のコスト仮定が変わる場合は、感度分析が必要です。",
+            ]
+        )
+        return _reply("\n".join(lines))
+
+    if lang == "ko":
+        lines = [
+            "결론: AI 지원 후보 정책은 기준 정책보다 결품률과 총 SCM 비용을 낮추고 서비스 수준을 개선했습니다.",
+            "",
+            "핵심 KPI 비교",
+            f"- 결품률: {baseline.stockout_rate:.1%} → {candidate.stockout_rate:.1%} ({stockout_delta_pp:+.1f}%p)",
+            f"- 서비스 수준: {baseline.service_level:.1%} → {candidate.service_level:.1%} ({service_delta_pp:+.1f}%p)",
+            f"- 총 SCM 비용: ¥{baseline.total_scm_cost_jpy:,.0f} → ¥{candidate.total_scm_cost_jpy:,.0f} ({cost_reduction_pct:.1%} 절감, ¥{cost_reduction:,.0f})",
+        ]
+        if drivers:
+            lines.extend(["", "주요 개선 요인"])
+            lines.extend(f"- {city} / {category}: 추정 비용 절감 ¥{value:,.0f}" for city, category, value in drivers)
+        lines.extend(
+            [
+                "",
+                "해석상 한계",
+                f"- {int(baseline.experimental_units)}개 SKU-매장 페어를 사용한 합성 오프라인 시뮬레이션입니다.",
+                "- 무작위 운영 실험이 아니므로 인과 효과로 해석할 수 없습니다.",
+                "- 발주·보관·결품·매장 이동 비용 가정에 대한 민감도 분석이 필요합니다.",
+            ]
+        )
+        return _reply("\n".join(lines))
+
+    lines = [
+        "Conclusion: the AI-assisted candidate policy lowers stockout exposure and total SCM cost while improving service level versus the baseline.",
+        "",
+        "KPI comparison",
+        f"- Stockout rate: {baseline.stockout_rate:.1%} → {candidate.stockout_rate:.1%} ({stockout_delta_pp:+.1f} pp)",
+        f"- Service level: {baseline.service_level:.1%} → {candidate.service_level:.1%} ({service_delta_pp:+.1f} pp)",
+        f"- Total SCM cost: ¥{baseline.total_scm_cost_jpy:,.0f} → ¥{candidate.total_scm_cost_jpy:,.0f} ({cost_reduction_pct:.1%} reduction, ¥{cost_reduction:,.0f})",
+    ]
+    if drivers:
+        lines.extend(["", "Top improvement drivers"])
+        lines.extend(f"- {city} / {category}: estimated cost reduction ¥{value:,.0f}" for city, category, value in drivers)
+    lines.extend(
+        [
+            "",
+            "Limitations",
+            f"- This is a synthetic offline simulation across {int(baseline.experimental_units)} SKU-store pairs.",
+            "- It is not a randomized production experiment, so the results should not be interpreted as causal impact.",
+            "- Cost assumptions for ordering, holding, stockouts, and transfers require sensitivity testing before deployment.",
+        ]
+    )
+    return _reply("\n".join(lines))
 
 
 def _format_reorder_answer(tables: dict[str, pd.DataFrame], lang: str) -> str:
